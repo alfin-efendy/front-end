@@ -13,13 +13,14 @@ export interface UploadProgress {
 }
 
 export class UploadService {
-  // Upload single file
   static async uploadFile(
     file: File,
+    password?: string,
     onProgress?: (progress: UploadProgress) => void
   ): Promise<UploadResponse> {
     const formData = new FormData();
     formData.append("file", file);
+    if (password) formData.append("password", password);
 
     try {
       const response = await axios.post<UploadResponse>("/upload", formData, {
@@ -47,26 +48,5 @@ export class UploadService {
       }
       throw new Error("Failed to upload file");
     }
-  }
-
-  static async uploadMultipleFiles(
-    files: File[],
-    onProgress?: (fileIndex: number, progress: UploadProgress) => void
-  ): Promise<UploadResponse[]> {
-    const results: UploadResponse[] = [];
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      try {
-        const result = await this.uploadFile(file, (progress) => {
-          onProgress?.(i, progress);
-        });
-        results.push(result);
-      } catch (error) {
-        console.error(`Failed to upload ${file.name}:`, error);
-        throw error;
-      }
-    }
-    return results;
   }
 }

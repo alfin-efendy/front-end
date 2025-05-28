@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { PdfHandler } from "@/lib/pdf-handler";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -28,13 +29,31 @@ export async function POST(req: Request) {
     );
   }
 
+  const password = formData.get("password") as string;
+  let uploadingFile: File = file;
+
+  if (file.type === "application/pdf") {
+    const res = await PdfHandler.checkPDF(file, password);
+    if (res.result === "error") {
+      return NextResponse.json({ error: res.error }, { status: 500 });
+    }
+
+    if (res.result !== "decrypted" && res.result !== "not_encrypted") {
+      return NextResponse.json({ error: res.result }, { status: 400 });
+    }
+
+    if (res.result === "decrypted" && res.unlockedFile) {
+      uploadingFile = res.unlockedFile;
+    }
+  }
+
   const timestamp = Date.now();
   const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
   const fileName = `/tmp/${timestamp}_${originalName}`;
 
   const { data, error } = await supabase.storage
     .from(process.env.NEXT_SUPABASE_BUCKET!)
-    .upload(fileName, file);
+    .upload(fileName, uploadingFile);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
