@@ -35,6 +35,7 @@ interface FileUploaderProps {
   maxSizeMB?: number;
   maxFiles?: number;
   description?: string;
+  disabled?: boolean;
 }
 
 export function FileUploader({
@@ -44,6 +45,7 @@ export function FileUploader({
   maxSizeMB = 5,
   maxFiles = 2,
   description = `Upload up to ${maxFiles} images up to ${maxSizeMB}MB each.`,
+  disabled = false,
 }: FileUploaderProps) {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [dragActive, setDragActive] = useState(false);
@@ -261,7 +263,7 @@ export function FileUploader({
           id="file-upload"
           accept={acceptedTypes}
           multiple
-          disabled={files.length >= maxFiles}
+          disabled={files.length >= maxFiles || disabled}
         />
         <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
 
@@ -377,6 +379,7 @@ export function FileUploader({
                       )}
                     {/* Remove File */}
                     <button
+                      disabled={disabled}
                       onClick={() => removeFile(fileItem.id)}
                       className="text-muted-foreground hover:text-white p-1"
                     >
