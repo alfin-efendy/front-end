@@ -15,7 +15,7 @@ export type ProjectInput = z.infer<typeof ProjectSchema>;
 export const NewProjectSchema = ProjectSchema.merge(
   z.object({
     labels: z.array(LabelSchema), // or reuse LabelArraySchema
-    images: z.array(z.string()).min(1, "At least one image is required"),
+    files: z.array(z.string()).min(1, "At least one files is required"),
   })
 );
 export type NewProjectInput = z.infer<typeof NewProjectSchema>;

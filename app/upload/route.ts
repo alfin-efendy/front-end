@@ -8,6 +8,11 @@ export async function POST(req: Request) {
   const supabase = await createClient();
   const formData = await req.formData();
 
+  const { error: userError } = await supabase.auth.getUser();
+  if (userError) {
+    return NextResponse.json({ error: userError.message }, { status: 401 });
+  }
+
   const file = formData.get("file") as File;
   if (!file) {
     return NextResponse.json({ error: "No files received." }, { status: 400 });

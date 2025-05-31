@@ -30,7 +30,7 @@ export const NewProject = ({ open, setOpen }: Props) => {
       name: "",
       description: "",
       labels: [],
-      images: [],
+      files: [],
     },
   });
 
@@ -96,16 +96,16 @@ export const NewProject = ({ open, setOpen }: Props) => {
         break;
       case 2:
         const images = uploadResults.map((result) => result.path);
-        form.setValue("images", images);
+        form.setValue("files", images);
 
         if (images.length === 0) {
-          form.setError("images", {
+          form.setError("files", {
             type: "manual",
             message: "At least one image is required",
           });
           return;
         }
-        form.clearErrors("images"); // Clear any previous error
+        form.clearErrors("files"); // Clear any previous error
 
         // Final step: submit the project
         run(
@@ -118,7 +118,10 @@ export const NewProject = ({ open, setOpen }: Props) => {
                 setUploadResults([]);
                 form.reset();
                 labelsForm.reset();
+                return;
               }
+
+              throw new Error(response.error || "Unknown error");
             });
           },
           {

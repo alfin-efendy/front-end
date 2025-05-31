@@ -45,10 +45,30 @@ export async function createProject(
     return { success: false, error: labelError.message };
   }
 
+  // Move file from temporary folder to permanent storage
+  const docFiles: string[] = await Promise.all(
+    parsed.data.files.map(async (tmpFile) => {
+      const timestamp = Date.now();
+      const fileName = tmpFile.split("/").pop() || "";
+      const extension = fileName.split(".").pop() || "";
+      const docFilePath = `docs/${timestamp}.${extension}`;
+
+      // TODO: Move file to permanent storage is not working
+      const { error } = await supabase.storage
+        .from(process.env.NEXT_SUPABASE_BUCKET!)
+        .move(tmpFile, docFilePath);
+
+      if (error) {
+        return tmpFile;
+      }
+      return docFilePath;
+    })
+  );
+
   const { error: imageError } = await supabase.from("task").insert(
-    parsed.data.images.map((image) => ({
+    docFiles.map((docFile) => ({
       project_id: projectData.id,
-      file_path: image,
+      file_path: docFile,
     }))
   );
 
@@ -81,8 +101,8 @@ export async function getProject(search?: string): Promise<ProjectWithStats[]> {
 
       // Fetch labels for this project
       const { data: labels } = await supabase
-        .from("labels")
-        .select("id, name")
+        .from("label")
+        .select("id, label")
         .eq("project_id", project.id);
 
       // Fetch annotations for files in this project
@@ -91,9 +111,9 @@ export async function getProject(search?: string): Promise<ProjectWithStats[]> {
 
       if (fileIds.length > 0) {
         const { data: annotationsData } = await supabase
-          .from("annotations")
+          .from("annotation")
           .select("id, is_submitted, file_id")
-          .in("file_id", fileIds);
+          .in("task_id", fileIds);
 
         annotations = annotationsData || [];
       }
@@ -123,4 +143,21 @@ export async function getProject(search?: string): Promise<ProjectWithStats[]> {
   );
 
   return processedProjects;
+}
+
+export async function deleteProject(
+  id: number
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  const { error: projectError } = await supabase
+    .from("project")
+    .delete()
+    .eq("id", id);
+
+  if (projectError) {
+    return { success: false, error: projectError.message };
+  }
+
+  return { success: true };
 }

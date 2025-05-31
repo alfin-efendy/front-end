@@ -12,12 +12,12 @@ export interface UploadProgress {
   percentage: number;
 }
 
-export class UploadService {
-  static async uploadFile(
+export const UploadService = {
+  uploadFile: async (
     file: File,
     password?: string,
     onProgress?: (progress: UploadProgress) => void
-  ): Promise<UploadResponse> {
+  ): Promise<UploadResponse> => {
     const formData = new FormData();
     formData.append("file", file);
     if (password) formData.append("password", password);
@@ -48,5 +48,5 @@ export class UploadService {
       }
       throw new Error("Failed to upload file");
     }
-  }
-}
+  },
+};

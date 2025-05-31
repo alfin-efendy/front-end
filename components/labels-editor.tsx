@@ -185,7 +185,7 @@ export const LabelEditor = ({ form, disabled = false }: Props) => {
                           {...draggableProvided.dragHandleProps}
                         >
                           <div
-                            className="p-1 flex items-center space-x-1 bg-white border-b"
+                            className="p-1 flex items-center space-x-1 border-b"
                             style={{ opacity: snapshot.isDragging ? 0.7 : 1 }}
                           >
                             <span className="cursor-move px-2">☰</span>

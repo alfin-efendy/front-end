@@ -1,16 +1,9 @@
-"use client";
+import { ListProjects } from "@/components/blocks/project-list";
+import { getProject } from "@/app/(protected)/project/actions";
+import { ProjectWithStats } from "@/types/project";
 
-import { NewProject } from "@/components/blocks/project-new";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+export default async function ProjectPage() {
+  const projects: ProjectWithStats[] = await getProject();
 
-export default function ProjectPage() {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="space-y-4">
-      <NewProject open={open} setOpen={setOpen} />
-      <Button onClick={() => setOpen(true)}>New Project</Button>
-    </div>
-  );
+  return <ListProjects initialProjects={projects} />;
 }

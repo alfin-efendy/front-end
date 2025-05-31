@@ -16,88 +16,113 @@ export interface PDFInfo {
   error?: string;
 }
 
-export class PdfHandler {
-  static async checkPDF(file: File, password: string): Promise<PDFInfo> {
-    const tmpDir = os.tmpdir();
-    const originalPath = `${tmpDir}/${Date.now()}_${file.name.replace(
-      /[^a-zA-Z0-9.-]/g,
-      "_"
-    )}`;
+// Helper function to sanitize filename
+const sanitizeFilename = (filename: string): string =>
+  filename.replace(/[^a-zA-Z0-9.-]/g, "_");
+
+// Helper function to generate temporary file path
+const generateTempPath = (filename: string): string =>
+  `${os.tmpdir()}/${Date.now()}_${sanitizeFilename(filename)}`;
+
+// Helper function to create File from buffer
+const createFileFromBuffer = (buffer: Buffer, filename: string): File =>
+  new File([buffer], filename, { type: "application/pdf" });
+
+// Helper function to handle qpdf process
+const executeQpdf = (args: string[]): Promise<number> =>
+  new Promise((resolve, reject) => {
+    const qpdf = spawn("qpdf", args);
+    qpdf.on("close", resolve);
+    qpdf.on("error", reject);
+  });
+
+export const PdfHandler = {
+  checkPDF: async (file: File, password: string): Promise<PDFInfo> => {
+    const originalPath = generateTempPath(file.name);
+
     try {
-      const isPdfFile = (await PdfHandler.isPdfFile(file))
-      if (isPdfFile != true) {
+      // Check if file is a valid PDF
+      const isPdfFile = await PdfHandler.isPdfFile(file);
+      if (isPdfFile !== true) {
         return { result: "corrupt_file" };
       }
 
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
+      // Write file to temporary location
+      const buffer = Buffer.from(await file.arrayBuffer());
       await writeFile(originalPath, buffer);
 
+      // Check encryption status
       const encryptionInfo = await PdfHandler.isEncrypt(originalPath, password);
-      if (encryptionInfo != "encrypted") return { result: encryptionInfo };
+      if (encryptionInfo !== "encrypted") {
+        await unlink(originalPath).catch(() => {}); // Cleanup on non-encrypted files
+        return { result: encryptionInfo };
+      }
 
-      const unlockName = `unlocked_${file.name.replace(
-        /[^a-zA-Z0-9.-]/g,
-        "_"
-      )}`;
-      const unlockPath = `${tmpDir}/${Date.now()}_${unlockName}`;
-      const qpdf = spawn("qpdf", [
+      // Generate unlocked file path
+      const unlockPath = generateTempPath(`unlocked_${file.name}`);
+
+      // Decrypt PDF
+      const exitCode = await executeQpdf([
         `--password=${password}`,
         "--decrypt",
         originalPath,
         unlockPath,
       ]);
 
-      const exitCode = await new Promise<number>((resolve, reject) => {
-        qpdf.on("close", resolve);
-        qpdf.on("error", reject);
-      });
+      // Cleanup original file
+      await unlink(originalPath).catch(() => {});
 
       if (exitCode !== 0) {
-        await unlink(originalPath);
+        await unlink(unlockPath).catch(() => {});
         return { result: "corrupt_file" };
       }
 
-      const bufferUnlockedFile = await readFile(unlockPath);
+      // Read decrypted file and create File object
+      const unlockedBuffer = await readFile(unlockPath);
+      await unlink(unlockPath).catch(() => {}); // Cleanup decrypted temp file
 
       return {
         result: "decrypted",
-        unlockedFile: new File([bufferUnlockedFile], unlockName, { type: "application/pdf" }),
+        unlockedFile: createFileFromBuffer(
+          unlockedBuffer,
+          `unlocked_${sanitizeFilename(file.name)}`
+        ),
       };
     } catch (error: any) {
+      // Cleanup on error
+      await Promise.allSettled([
+        unlink(originalPath),
+        unlink(generateTempPath(`unlocked_${file.name}`)),
+      ]);
+
       return {
         result: "error",
         error: `Failed to check PDF: ${error.message}`,
       };
-    } finally {
     }
-  }
+  },
 
-  static async isPdfFile(file: File): Promise<boolean | "corrupt_file"> {
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+  isPdfFile: async (file: File): Promise<boolean | "corrupt_file"> => {
+    if (file.type !== "application/pdf") return false;
+
+    const buffer = Buffer.from(await file.arrayBuffer());
     const signature = buffer.subarray(0, 4).toString("utf8");
 
-    if (file.type !== "application/pdf") return false;
-    if (signature !== "%PDF") return "corrupt_file";
+    return signature === "%PDF" ? true : "corrupt_file";
+  },
 
-    return true;
-  }
-
-  static async isEncrypt(
+  isEncrypt: async (
     filePath: string,
     password?: string
   ): Promise<
     "encrypted" | "not_encrypted" | "incorrect_password" | "corrupt_file"
-  > {
+  > => {
     try {
-      const args = ["--show-encryption", filePath];
-      if (password) {
-        args.unshift("--password=" + password);
-      }
+      const args = password
+        ? [`--password=${password}`, "--show-encryption", filePath]
+        : ["--show-encryption", filePath];
 
       const { stdout } = await execPromise("qpdf", args);
-
       const output = stdout.toLowerCase();
 
       if (output.includes("not encrypted")) return "not_encrypted";
@@ -108,7 +133,7 @@ export class PdfHandler {
     } catch (err: any) {
       const stderr = err.stderr?.toLowerCase() || err.message.toLowerCase();
       if (stderr.includes("incorrect password")) return "incorrect_password";
-      throw new Error("qpdf error: " + stderr);
+      throw new Error(`qpdf error: ${stderr}`);
     }
-  }
-}
+  },
+};
