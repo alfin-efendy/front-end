@@ -1,9 +1,8 @@
 "use client"
 
-import { ChevronRight, LogOut } from "lucide-react"
-import Link from "next/link"
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { AutoBreadcrumb } from "@/components/breadcrumb"
 
 interface BreadcrumbItem {
   label: string
@@ -15,9 +14,6 @@ export interface NavbarProps extends React.HTMLAttributes<HTMLElement> {
 }
 
 const Navbar = React.forwardRef<HTMLElement, NavbarProps>(({ children, className, ...props }, ref) => {
-  const breadcrumbs: BreadcrumbItem[] = [
-    { label: "Home", href: "#" },
-  ]
 
   return (
     <nav
@@ -28,21 +24,7 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(({ children, className
         className
       )}>
       <div className="font-medium text-sm hidden sm:flex items-center space-x-1 truncate max-w-[300px]">
-        {breadcrumbs.map((item, index) => (
-          <div key={item.label} className="flex items-center">
-            {index > 0 && <ChevronRight className="h-4 w-4 text-gray-500 dark:text-gray-400 mx-1" />}
-            {item.href ? (
-              <Link
-                href={item.href}
-                className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-              >
-                {item.label}
-              </Link>
-            ) : (
-              <span className="text-gray-900 dark:text-gray-100">{item.label}</span>
-            )}
-          </div>
-        ))}
+        {<AutoBreadcrumb/>}
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4 ml-auto sm:ml-0">

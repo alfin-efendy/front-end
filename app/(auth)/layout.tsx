@@ -1,25 +1,27 @@
-'use client'
+"use client";
 
-import { GalleryVerticalEnd } from "lucide-react"
-import { useAuth } from '@/hooks/useAuth'
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { GalleryVerticalEnd } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function AuthLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const router = useRouter()
-  const { user } = useAuth()
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo") ?? "/project";
+  const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
-      router.push('/project')
+      router.replace(redirectTo);
     }
-  }, [user, router])
+  }, [user, router]);
 
-  if (user) return null
+  if (user) return null;
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
@@ -33,5 +35,5 @@ export default function AuthLayout({
         {children}
       </div>
     </div>
-  )
+  );
 }

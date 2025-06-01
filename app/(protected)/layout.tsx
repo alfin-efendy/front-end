@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { useTheme } from "next-themes"
 import { Navbar } from "@/components/navbar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from "@/components/ui/dropdown-menu"
+
 export default function ProtectedLayout({
   children,
 }: Readonly<{
@@ -34,7 +35,8 @@ export default function ProtectedLayout({
 
   useEffect(() => {
     if (!user) {
-      router.push('/login')
+      const current = window.location.pathname + window.location.search;
+      router.push(`/login?redirectTo=${encodeURIComponent(current)}`);
     }
   }, [user, router])
 
