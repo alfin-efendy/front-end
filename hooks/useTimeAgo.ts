@@ -30,9 +30,15 @@ export function useTimeAgo(date: string | Date): string {
         setTimeAgo(hours === 1 ? "1 hour ago" : `more than ${hours} hours ago`);
       } else if (days < 7) {
         setTimeAgo(days === 1 ? "1 day ago" : `${days} days ago`);
+      } else if (days < 30) {
+        const weeks = Math.floor(days / 7);
+        setTimeAgo(weeks === 1 ? "1 week ago" : `${weeks} weeks ago`);
+      } else if (days < 365) {
+        const months = Math.floor(days / 30);
+        setTimeAgo(months === 1 ? "1 month ago" : `${months} months ago`);
       } else {
-        // fallback to relative format
-        setTimeAgo(formatDistanceToNow(parsedDate, { addSuffix: true }));
+        const years = Math.floor(days / 365);
+        setTimeAgo(years === 1 ? "1 year ago" : `${years} years ago`);
       }
     };
 

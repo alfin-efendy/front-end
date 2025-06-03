@@ -5,7 +5,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import { DataTableAdvancedToolbar } from "@/components/data-table/data-table-advanced-toolbar";
 import { DataTableFilterList } from "@/components/data-table/data-table-filter-list";
 import { DataTableSortList } from "@/components/data-table/data-table-sort-list";
-import { useDataTable } from "@/hooks/use-data-table";
+import { useDataTable } from "@/hooks/useDataTable";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { useMemo, useState } from "react";
 import { parseAsArrayOf, parseAsString, useQueryState } from "nuqs";

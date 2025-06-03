@@ -56,7 +56,7 @@ import {
   SortableOverlay,
 } from "@/components/ui/sortable";
 import { dataTableConfig } from "@/config/data-table";
-import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
+import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
 import { getDefaultFilterOperator, getFilterOperators } from "@/lib/data-table";
 import { formatDate } from "@/lib/format";
 import { generateId } from "@/lib/id";

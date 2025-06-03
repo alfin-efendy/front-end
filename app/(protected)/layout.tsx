@@ -43,9 +43,9 @@ export default function ProtectedLayout({
   if (!isMounted || !user) return null
 
   return (
-    <div className="flex h-screen">
+    <div className="flex flex-col max-h-screen max-w-screen mx-auto">
       <div className="w-full flex flex-1 flex-col">
-        <header className="h-16 border-b border-gray-200 dark:border-[#1F1F23]">
+        <header className="h-16 border-b">
           <Navbar>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -82,14 +82,13 @@ export default function ProtectedLayout({
                 <DropdownMenuItem>
                   <button
                     type="button"
-                    className="w-full flex items-center justify-between p-2 
-                                hover:bg-zinc-50 dark:hover:bg-zinc-800/50 
+                    className="w-full flex items-center justify-between p-2                               
                                 rounded-lg transition-colors duration-200"
                     onClick={handleLogout}
                   >
                     <div className="flex items-center gap-2">
                       <LogOut className="w-4 h-4" />
-                      <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Logout</span>
+                      <span className="text-sm font-medium">Logout</span>
                     </div>
                   </button>
                 </DropdownMenuItem>
@@ -97,7 +96,7 @@ export default function ProtectedLayout({
             </DropdownMenu>
           </Navbar>
         </header>
-        <main className="flex-1 overflow-auto p-6 bg-white dark:bg-[#0F0F12]">
+        <main className="flex-1 overflow-hidden h-full p-6">
           {children}
         </main>
       </div>
