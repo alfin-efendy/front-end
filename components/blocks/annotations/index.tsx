@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DocumentCanvas } from "@/components/canvas";
 import { useCanvas } from "@/hooks/useCanvas";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import { InitialAnnotationData } from "@/types/annotation";
-import { useKeyboard } from "@/hooks/useKeyboard"
+import { useKeyboard } from "@/hooks/useKeyboard";
 import { Toolbar, ToolType } from "@/components/toolbar";
 import {
   Card,
@@ -14,6 +14,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { CanvasSize } from "@/types/canvas";
+import { Task } from "@/types/task";
+import { Separator } from "@/components/ui/separator";
+import { useRouter, useSearchParams } from "next/navigation";
+import { color } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 type Props = {
   data: InitialAnnotationData;
@@ -22,8 +33,16 @@ type Props = {
 export const AnnotationsPage = ({ data }: Props) => {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [selectedTool, setSelectedTool] = useState<"select" | "pan">("select");
+  const [image, setImage] = useState<string>(data.urlFile);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [canvasSize, setCanvasSize] = useState<CanvasSize>({
+    width: 0,
+    height: 0,
+  });
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const activeTaskId = searchParams.get("task");
 
   const handleZoomChange = (newZoom: number) => {
     setZoomLevel(newZoom);
@@ -50,6 +69,7 @@ export const AnnotationsPage = ({ data }: Props) => {
     moveSelectedAnnotation,
     undo,
     redo,
+    scaleAnnotations,
     canUndo,
     canRedo,
   } = useAnnotations({ width: 0, height: 0 });
@@ -62,7 +82,7 @@ export const AnnotationsPage = ({ data }: Props) => {
     handleMouseUp,
     resizeCanvas,
   } = useCanvas({
-    image: data?.urlFile ?? null,
+    image: image,
     annotations: annotations,
     selectedAnnotation,
     currentLabel: "",
@@ -74,7 +94,7 @@ export const AnnotationsPage = ({ data }: Props) => {
     zoomLevel,
   });
 
-    useKeyboard({
+  useKeyboard({
     selectedAnnotation,
     deleteSelectedAnnotation,
     moveSelectedAnnotation,
@@ -82,38 +102,111 @@ export const AnnotationsPage = ({ data }: Props) => {
     setZoomLevel: handleZoomChange,
     selectedTool,
     setSelectedTool: handleToolChange,
-  })
+  });
+
+  const handleLayoutSizeChange = () => {
+    if (canvasRef.current && imageRef.current && imageRef.current.complete) {
+      const oldSize = { ...canvasSize };
+      const newSize = resizeCanvas();
+      if (
+        newSize &&
+        (oldSize.width !== newSize.width || oldSize.height !== newSize.height)
+      ) {
+        scaleAnnotations(oldSize, newSize);
+        setCanvasSize(newSize);
+      }
+    }
+  };
+
+  const handleChangeImage = async (id: string, imageUrl: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const img = new Image();
+
+    params.set("task", String(id));
+    router.push(`?${params.toString()}`, { scroll: false });
+
+    setImage(imageUrl);
+    img.src = image;
+
+    await new Promise<void>((resolve) => {
+      img.onload = () => {
+        imageRef.current = img;
+        resolve();
+      };
+    });
+  };
 
   return (
-    <div className="w-full h-full max-w-full max-h-full flex flex-col">
-      <Card className="flex flex-col w-full h-full">
-        <CardHeader className="flex-shrink-0">
-          <Toolbar
-            selectedTool={selectedTool}
-            onToolChange={handleToolChange}
-            zoomLevel={zoomLevel}
-            onZoomChange={handleZoomChange}
-            onUndo={undo}
-            onRedo={redo}
-            canUndo={canUndo}
-            canRedo={canRedo}
-            onShowHelp={toggleHelp}
-          />
-        </CardHeader>
-        <CardContent className="flex-1 relative">
-          <DocumentCanvas
-            image={data?.urlFile || ""}
-            canvasRef={canvasRef}
-            canvasContainerRef={canvasContainerRef}
-            handleMouseDown={handleMouseDown}
-            handleMouseMove={handleMouseMove}
-            handleMouseUp={handleMouseUp}
-            zoomLevel={zoomLevel}
-            onCanvasResize={resizeCanvas}
-            onZoomChange={handleZoomChange}
-          />
-        </CardContent>
-      </Card>
+    <div className="flex flex-col">
+      <ResizablePanelGroup
+        className="flex flex-row"
+        direction="horizontal"
+        onLayout={handleLayoutSizeChange}
+      >
+        <ResizablePanel defaultSize={90} className="flex flex-col w-full">
+          <div className="flex flex-row">
+            <Toolbar
+              selectedTool={selectedTool}
+              onToolChange={handleToolChange}
+              zoomLevel={zoomLevel}
+              onZoomChange={handleZoomChange}
+              onUndo={undo}
+              onRedo={redo}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              onShowHelp={toggleHelp}
+              className="w-auto flex-shrink-0"
+            />
+            <div className="overflow-auto w-full flex flex-row items-center content-start space-x-3">
+              {data.labels.map((item) => (
+                <div
+                  key={item.id}
+                  className={"inline-flex items-center rounded-full px-3 py-1 text-sm font-medium shadow min-w-16"}
+                  style={{ backgroundColor: item.color }}
+                >
+                  {item.name}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="h-full max-h-[calc(100vh-9.55rem)] overflow-auto">
+            <DocumentCanvas
+              className="bg-green-500 "
+              image={data?.urlFile || ""}
+              canvasRef={canvasRef}
+              canvasContainerRef={canvasContainerRef}
+              handleMouseDown={handleMouseDown}
+              handleMouseMove={handleMouseMove}
+              handleMouseUp={handleMouseUp}
+              zoomLevel={zoomLevel}
+              onCanvasResize={resizeCanvas}
+              onZoomChange={handleZoomChange}
+            />
+          </div>
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={10}>
+          <div className="h-full max-h-[calc(100vh-6.5rem)] space-y-2 p-2 overflow-auto ">
+            {data.tasks.map((task) => {
+              const isActive = String(task.id) === activeTaskId;
+              return (
+                <img
+                  key={task.id}
+                  src={task.urlFile}
+                  className={`
+                    w-full object-contain cursor-pointer rounded-md border-4
+                    ${isActive ? "border-blue-500" : "border-muted"}
+                  `}
+                  onClick={() =>
+                    handleChangeImage(String(task.id), task.urlFile)
+                  }
+                />
+              );
+            })}
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
+      <div className="h-9 w-full bg-teal-500 shrink-0">submit</div>
     </div>
   );
 };

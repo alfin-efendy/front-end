@@ -25,6 +25,7 @@ import { useRouter } from "next/navigation";
 import { useTimeAgo } from "@/hooks/useTimeAgo";
 import { DataTableToolbar } from "../data-table/data-table-toolbar";
 import { TextDatetime } from "../text-datetime";
+import { useImageLoader } from "@/hooks/useImageLoader";
 
 type Props = {
   initialTasks: Task[];
@@ -56,9 +57,14 @@ export const TaskList = ({ initialTasks }: Props) => {
         ),
         cell: ({ cell }) => {
           const urlFile = cell.getValue<Task["urlFile"]>();
+          const { dataUrl, loading, error } = useImageLoader(urlFile);
+
+          if (loading) return <p>Loading image...</p>;
+          if (error) return <p className="text-red-500">Error: {error}</p>;
+          
           return (
             <img
-              src={urlFile}
+              src={dataUrl!}
               alt="Task File"
               width={512}
               height={512}

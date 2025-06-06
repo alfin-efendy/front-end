@@ -51,7 +51,7 @@ export async function getTask(
         (ann: any) => ann.label_id
       ).length;
 
-      let urlFile = `${protocol}://${host}/files/${task.file_path}`;
+      const urlFile = `${protocol}://${host}/files/${task.file_path}`;
 
       return {
         id: task.id,

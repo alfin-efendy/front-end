@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import type React from "react";
 import { useEffect, useCallback } from "react";
 
@@ -13,6 +14,7 @@ interface DocumentCanvasProps {
   zoomLevel?: number;
   onCanvasResize?: () => void;
   onZoomChange?: (zoom: number) => void;
+  className?: string;
 }
 
 export function DocumentCanvas({
@@ -25,6 +27,7 @@ export function DocumentCanvas({
   zoomLevel = 1,
   onCanvasResize,
   onZoomChange,
+  className,
 }: DocumentCanvasProps) {
   // Handle mouse wheel zoom
   const handleWheel = useCallback(
@@ -69,10 +72,7 @@ export function DocumentCanvas({
   }, [zoomLevel, onCanvasResize]);
 
   return (
-    <div
-      ref={canvasContainerRef}
-      className="relative overflow-auto h-full"
-    >
+    <div ref={canvasContainerRef} className="relative overflow-auto h-full">
       <div
         style={{
           transform: `scale(${zoomLevel})`,
@@ -80,6 +80,7 @@ export function DocumentCanvas({
         }}
       >
         <canvas
+          className={cn(className)}
           ref={canvasRef}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}

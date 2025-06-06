@@ -2,6 +2,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { InitialAnnotationData } from "@/types/annotation";
 import { LabelInput } from "@/types/label";
+import { Task } from "@/types/task";
 import { headers } from "next/headers";
 
 export async function getAnnotation(
@@ -21,7 +22,7 @@ export async function getAnnotation(
 
   if (taskError) {
     return {
-      error: `Error fetching annotation: ${taskError.message}`,
+      error: `Error find task: ${taskError.message}`,
     };
   }
 
@@ -44,29 +45,48 @@ export async function getAnnotation(
     };
   }
 
-  const { data: dataLabel, error: errorTask } = await supabase
+  const { data: labelData, error: labelError } = await supabase
     .from("label")
     .select("*")
     .order("order", { ascending: true })
     .eq("project_id", taskData.project_id);
 
-  if (errorTask) {
+  if (labelError) {
     return {
-      error: `Error fetching task data: ${errorTask.message}`,
+      error: `Error fetching labels: ${labelError.message}`,
     };
+  }
+
+  const { data: tasksData, error: tasksError} = await supabase
+  .from("task")
+  .select("*")
+  .eq("project_id", taskData.project_id);
+
+  if (tasksError){
+    return{
+      error: `Error fetching tasks ${tasksError.message}`,
+    }
   }
 
   let processedData: InitialAnnotationData = {
     annotations: annotationsData,
     urlFile: `${protocol}://${host}/files/${taskData.file_path}`,
     taskId: taskId.toString(),
-    labels: dataLabel.map(
-      (label: LabelInput) => ({
+    labels: labelData.map(
+      (label) => ({
         id: label.id,
-        name: label.name,
+        name: label.label,
         type: label.type,
         color: label.color,
         order: label.order,
+      })
+    ),
+    tasks: tasksData.map(
+      (task) => (
+        {
+        id: task.id,
+        urlFile: `${protocol}://${host}/files/${task.file_path}`,
+        status: task.status,
       })
     ),
   };

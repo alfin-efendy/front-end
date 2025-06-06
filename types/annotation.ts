@@ -1,5 +1,6 @@
 import { TitlePosition } from "@/types/canvas";
 import { LabelInput } from "@/types/label";
+import { Task } from "./task";
 
 export type Annotation = {
   id?: string;
@@ -27,8 +28,9 @@ export type AnnotationClient = Annotation & {
 };
 
 export type InitialAnnotationData = {
-    annotations: AnnotationClient[];
-    urlFile: string;
-    taskId: string;
-    labels: LabelInput[];
-}
+  annotations: AnnotationClient[];
+  urlFile: string;
+  taskId: string;
+  labels: LabelInput[];
+  tasks:  Pick<Task, "id" | "urlFile" | "status">[];
+};

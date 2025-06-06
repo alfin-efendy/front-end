@@ -39,7 +39,7 @@ export const ListProjects = ({initialProjects}:Props) => {
   }
   
   return (
-    <div>
+    <div className="p-8">
       <div className="space-y-4 mb-4">
         <NewProject open={open} setOpen={setOpen} />
         <Button onClick={() => setOpen(true)}>New Project</Button>

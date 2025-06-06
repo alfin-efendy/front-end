@@ -170,6 +170,36 @@ const [canvasSize, setCanvasSize] = useState<CanvasSize>(initialCanvasSize)
     [selectedAnnotation, annotations, canvasSize, updateAnnotation],
   )
 
+  const scaleAnnotations = useCallback(
+    (oldSize: CanvasSize, newSize: CanvasSize) => {
+      if (oldSize.width === 0 || oldSize.height === 0 || newSize.width === 0 || newSize.height === 0) {
+        return
+      }
+
+      const widthRatio = newSize.width / oldSize.width
+      const heightRatio = newSize.height / oldSize.height
+
+      const scaledAnnotations = annotations.map((ann) => {
+        // Don't scale locked annotations
+        if (ann.locked) return ann
+
+        return {
+          ...ann,
+          x: ann.x * widthRatio,
+          y: ann.y * heightRatio,
+          width: ann.width * widthRatio,
+          height: ann.height * heightRatio,
+        }
+      })
+
+      setAnnotations(scaledAnnotations)
+      setCanvasSize(newSize)
+
+      // Don't add to history for scaling
+    },
+    [annotations],
+  )
+
   return {
     annotations,
     selectedAnnotation,
@@ -182,6 +212,7 @@ const [canvasSize, setCanvasSize] = useState<CanvasSize>(initialCanvasSize)
     moveSelectedAnnotation,
     undo,
     redo,
+    scaleAnnotations,
     canUndo: historyIndex > 0,
     canRedo: historyIndex < history.length - 1,
   }

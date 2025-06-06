@@ -20,6 +20,7 @@ import {
   HelpCircle,
 } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { cn } from "@/lib/utils"
 
 export type ToolType = "select" | "pan"
 
@@ -33,6 +34,7 @@ interface ToolbarProps {
   canUndo: boolean
   canRedo: boolean
   onShowHelp?: () => void
+  className?: string;
 }
 
 export function Toolbar({
@@ -45,6 +47,7 @@ export function Toolbar({
   canUndo,
   canRedo,
   onShowHelp,
+  className,
 }: ToolbarProps) {
   // Define tools
   const tools = [
@@ -83,7 +86,7 @@ export function Toolbar({
 
   return (
     <TooltipProvider>
-      <div className="bg-background border-b p-2 flex flex-wrap items-center gap-2">
+      <div className={cn("bg-background border-b p-2 flex flex-wrap items-center gap-2", className)}>
         {/* Tool buttons */}
         <div className="flex items-center space-x-1">
           {tools.map((tool) => (
@@ -175,6 +178,7 @@ export function Toolbar({
             </Tooltip>
           )}
         </div>
+        <Separator orientation="vertical" className="h-8" />
       </div>
     </TooltipProvider>
   )

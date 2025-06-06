@@ -9,7 +9,7 @@ import { drawAnnotations } from "@/lib/drawing"
 import type { ToolType } from "@/components/toolbar"
 
 interface UseCanvasProps {
-  image: string | null
+  image: string
   annotations: AnnotationClient[]
   selectedAnnotation: string | null
   currentLabel: string
