@@ -40,7 +40,9 @@ export function Sidebar() {
                       className="w-3 h-3 rounded-sm"
                       style={{ backgroundColor: box.color }}
                     />
-                    <span className="font-medium text-sm">{box.label}</span>
+                    <span className="font-medium text-sm">
+                      {box.label || 'Unlabeled'}
+                    </span>
                   </div>
                   <div className="flex space-x-1">
                     <Button

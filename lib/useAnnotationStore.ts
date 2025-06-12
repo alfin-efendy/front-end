@@ -165,10 +165,12 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     const newBox: BoundingBox = {
       ...box,
       id,
-      color: box.color || COLORS[colorIndex],
+      label: box.label || '',
+      color: box.color || '#6B7280', // Default gray color for unlabeled boxes
     };
     set({ 
-      boundingBoxes: [...boundingBoxes, newBox]
+      boundingBoxes: [...boundingBoxes, newBox],
+      selectedBoxId: id // Auto-select the new box
     });
     addToHistory();
   },

@@ -1,5 +1,4 @@
-
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { useAnnotationStore } from '@/lib/useAnnotationStore';
 import { BoundingBox } from './BoundingBox';
 
@@ -118,7 +117,7 @@ export function CanvasContainer({ selectedTool = 'select' }: CanvasContainerProp
 
     if (isCreatingBox && previewBox && previewBox.width > 5 && previewBox.height > 5) {
       addBoundingBox({
-        label: 'New Label',
+        label: '', //New bounding box don't have labels by default
         x: previewBox.x,
         y: previewBox.y,
         width: previewBox.width,
@@ -152,6 +151,27 @@ export function CanvasContainer({ selectedTool = 'select' }: CanvasContainerProp
     return 'crosshair';
   };
 
+  // Handle drag over to allow drop
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+  }, []);
+
+  // Handle drop
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const label = e.dataTransfer.getData("text/plain");
+    const { x, y } = getCanvasCoordinates(e.clientX, e.clientY);
+
+    // Find if dropped inside a bounding box and update the label
+    boundingBoxes.forEach(box => {
+      if (x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height) {
+        //Here you would dispatch an action to update the label of the bounding box.
+        //Example: dispatch(updateBoundingBoxLabel(box.id, label));
+        console.log(`Dropped label "${label}" inside bounding box ${box.id}`);
+      }
+    });
+  }, [boundingBoxes, getCanvasCoordinates]);
+
   if (isImageLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -173,10 +193,12 @@ export function CanvasContainer({ selectedTool = 'select' }: CanvasContainerProp
       ref={containerRef}
       className="relative w-full h-full overflow-hidden bg-gray-100"
       style={{ cursor: getCursor() }}
+      onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      onWheel={handleWheel}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
     >
       {/* Image */}
       <img

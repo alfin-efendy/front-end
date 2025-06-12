@@ -20,6 +20,7 @@ export function BoundingBox({ box, zoomLevel }: BoundingBoxProps) {
   
   const dragRef = useRef<{ startX: number; startY: number; startBoxX: number; startBoxY: number } | null>(null);
   const resizeRef = useRef<{ startX: number; startY: number; direction: string; startBox: BoundingBoxType } | null>(null);
+  const [isDragOver, setIsDragOver] = React.useState(false);
   
   const isSelected = selectedBoxId === box.id;
   
@@ -54,6 +55,38 @@ export function BoundingBox({ box, zoomLevel }: BoundingBoxProps) {
       startBox: { ...box },
     };
   }, [box, selectBoundingBox, setIsResizing]);
+
+  // Handle drag over for visual feedback
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    
+    const labelData = e.dataTransfer.getData('application/json');
+    if (labelData) {
+      try {
+        const label = JSON.parse(labelData);
+        updateBoundingBox(box.id, {
+          label: label.name,
+          color: label.color
+        });
+      } catch (error) {
+        console.error('Failed to parse label data:', error);
+      }
+    }
+  }, [box.id, updateBoundingBox]);
   
   React.useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -173,20 +206,36 @@ export function BoundingBox({ box, zoomLevel }: BoundingBoxProps) {
       {/* Main bounding box */}
       <div
         className={`
-          w-full h-full border-2 cursor-move
+          w-full h-full border-2 cursor-move transition-all
           ${isSelected ? 'border-blue-500' : 'border-gray-400'}
           ${isSelected ? 'bg-blue-500 bg-opacity-10' : 'bg-transparent'}
+          ${isDragOver ? 'bg-green-500 bg-opacity-20 border-green-500' : ''}
         `}
-        style={{ borderColor: box.color }}
+        style={{ borderColor: isDragOver ? '#10B981' : (box.color || '#6B7280') }}
         onMouseDown={handleMouseDown}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       >
         {/* Label */}
-        <div
-          className="absolute -top-6 left-0 px-1 py-0.5 text-xs text-white rounded"
-          style={{ backgroundColor: box.color, fontSize: `${Math.max(10, 2 / zoomLevel)}px` }}
-        >
-          {box.label}
-        </div>
+        {box.label && (
+          <div
+            className="absolute -top-6 left-0 px-1 py-0.5 text-xs text-white rounded"
+            style={{ backgroundColor: box.color || '#6B7280', fontSize: `${Math.max(10, 12 / zoomLevel)}px` }}
+          >
+            {box.label}
+          </div>
+        )}
+        
+        {/* No label indicator */}
+        {!box.label && (
+          <div
+            className="absolute -top-6 left-0 px-1 py-0.5 text-xs bg-gray-500 text-white rounded opacity-70"
+            style={{ fontSize: `${Math.max(10, 12 / zoomLevel)}px` }}
+          >
+            No Label
+          </div>
+        )}
       </div>
       
       {/* Resize handles - only show when selected */}

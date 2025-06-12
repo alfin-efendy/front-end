@@ -160,7 +160,12 @@ export default function AnnotationPage() {
                 {data.labels.map((label: any) => (
                   <div
                     key={label.id}
-                    className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium shadow min-w-16 text-white"
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('application/json', JSON.stringify(label));
+                      e.dataTransfer.effectAllowed = 'copy';
+                    }}
+                    className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium shadow min-w-16 text-white cursor-grab active:cursor-grabbing hover:opacity-80 transition-opacity"
                     style={{ backgroundColor: label.color }}
                   >
                     {label.name}
