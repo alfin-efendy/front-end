@@ -392,7 +392,7 @@ export function useCanvas({
             }
           })
         }
-      }, 16) 
+      }, 16); // ~60fps throttling
     },
     [
       annotations,

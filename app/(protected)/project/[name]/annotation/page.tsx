@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from 'react';
@@ -31,12 +30,12 @@ export default function AnnotationPage() {
     selectBoundingBox,
     setZoomLevel,
   } = useAnnotationStore();
-  
+
   const [selectedTool, setSelectedTool] = useState<ToolType>("select");
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
-  
+
   // Load initial data
   useEffect(() => {
     const taskId = searchParams.get('task');
@@ -74,7 +73,7 @@ export default function AnnotationPage() {
     // Implement redo functionality if needed
     console.log('Redo action');
   };
-  
+
   // Global keyboard shortcuts
   React.useEffect(() => {
     const handleKeyboardShortcuts = (e: KeyboardEvent) => {
@@ -83,18 +82,18 @@ export default function AnnotationPage() {
         deleteBoundingBox(selectedBoxId);
         selectBoundingBox(null);
       }
-      
+
       // Tool shortcuts
       if (e.key === 's' || e.key === 'S') {
         e.preventDefault();
         setSelectedTool('select');
       }
-      
+
       if (e.key === 'p' || e.key === 'P') {
         e.preventDefault();
         setSelectedTool('pan');
       }
-      
+
       // Zoom shortcuts
       if (e.ctrlKey || e.metaKey) {
         if (e.key === '=' || e.key === '+') {
@@ -109,7 +108,7 @@ export default function AnnotationPage() {
         }
       }
     };
-    
+
     document.addEventListener('keydown', handleKeyboardShortcuts);
     return () => document.removeEventListener('keydown', handleKeyboardShortcuts);
   }, [selectedBoxId, deleteBoundingBox, selectBoundingBox, zoomIn, zoomOut, resetView]);
@@ -121,7 +120,7 @@ export default function AnnotationPage() {
       </div>
     );
   }
-  
+
   return (
     <div className="flex flex-col h-screen">
       <ResizablePanelGroup
@@ -142,7 +141,7 @@ export default function AnnotationPage() {
               canRedo={false} // Set to true when redo functionality is implemented
               className="w-auto flex-shrink-0"
             />
-            
+
             {/* Labels Display */}
             {data?.labels && (
               <div className="overflow-auto w-full flex flex-row items-center content-start space-x-3 p-2">
@@ -158,7 +157,7 @@ export default function AnnotationPage() {
               </div>
             )}
           </div>
-          
+
           {/* Canvas Area */}
           <div className="flex-1 overflow-hidden">
             <div className="h-full relative">
@@ -166,15 +165,15 @@ export default function AnnotationPage() {
             </div>
           </div>
         </ResizablePanel>
-        
+
         <ResizableHandle withHandle />
-        
+
         {/* Sidebar */}
         <ResizablePanel defaultSize={15}>
           <Sidebar />
         </ResizablePanel>
       </ResizablePanelGroup>
-      
+
       {/* Edit Modal */}
       <EditBoxModal />
     </div>

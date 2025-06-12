@@ -1,3 +1,4 @@
+
 import React, { useCallback, useRef, useEffect } from 'react';
 import { useAnnotationStore } from '@/lib/useAnnotationStore';
 import { BoundingBox } from './BoundingBox';
@@ -38,11 +39,24 @@ export function CanvasContainer({ selectedTool = 'select' }: CanvasContainerProp
     if (!containerRef.current || !loadedImage) return { x: 0, y: 0 };
 
     const rect = containerRef.current.getBoundingClientRect();
+    // Convert screen coordinates to image coordinates accounting for pan and zoom
     const x = (clientX - rect.left - panOffset.x) / zoomLevel;
     const y = (clientY - rect.top - panOffset.y) / zoomLevel;
 
-    return { x, y };
+    // Ensure coordinates are within image bounds
+    const constrainedX = Math.max(0, Math.min(x, loadedImage.width));
+    const constrainedY = Math.max(0, Math.min(y, loadedImage.height));
+
+    return { x: constrainedX, y: constrainedY };
   }, [zoomLevel, panOffset, loadedImage]);
+
+  // Get screen coordinates from canvas coordinates
+  const getScreenCoordinates = useCallback((canvasX: number, canvasY: number) => {
+    return {
+      x: canvasX * zoomLevel + panOffset.x,
+      y: canvasY * zoomLevel + panOffset.y
+    };
+  }, [zoomLevel, panOffset]);
 
   // Handle mouse down
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -58,11 +72,15 @@ export function CanvasContainer({ selectedTool = 'select' }: CanvasContainerProp
 
     // Handle select tool - start creating bounding box
     if (selectedTool === 'select') {
-      setIsCreatingBox(true);
-      setDragStart({ x, y });
-      setPreviewBox({ x, y, width: 0, height: 0 });
+      // Only start creating if clicking within image bounds
+      if (x >= 0 && y >= 0 && x <= loadedImage.width && y <= loadedImage.height) {
+        setIsCreatingBox(true);
+        setDragStart({ x, y });
+        setPreviewBox({ x, y, width: 0, height: 0 });
+        selectBoundingBox(null); // Deselect any selected box
+      }
     }
-  }, [loadedImage, selectedTool, getCanvasCoordinates, setIsCreatingBox, setDragStart, setPreviewBox]);
+  }, [loadedImage, selectedTool, getCanvasCoordinates, setIsCreatingBox, setDragStart, setPreviewBox, selectBoundingBox]);
 
   // Handle mouse move
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -81,12 +99,13 @@ export function CanvasContainer({ selectedTool = 'select' }: CanvasContainerProp
 
     if (isCreatingBox && dragStart) {
       const { x, y } = getCanvasCoordinates(e.clientX, e.clientY);
-      setPreviewBox({
+      const newBox = {
         x: Math.min(dragStart.x, x),
         y: Math.min(dragStart.y, y),
         width: Math.abs(x - dragStart.x),
         height: Math.abs(y - dragStart.y)
-      });
+      };
+      setPreviewBox(newBox);
     }
   }, [loadedImage, isPanning, panStart, panOffset, isCreatingBox, dragStart, getCanvasCoordinates, setPanOffset, setPreviewBox]);
 
@@ -163,7 +182,7 @@ export function CanvasContainer({ selectedTool = 'select' }: CanvasContainerProp
       <img
         src={loadedImage.src}
         alt="Annotation target"
-        className="absolute"
+        className="absolute select-none"
         style={{
           transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
           transformOrigin: '0 0',
@@ -174,21 +193,36 @@ export function CanvasContainer({ selectedTool = 'select' }: CanvasContainerProp
       />
 
       {/* Bounding boxes */}
-      {boundingBoxes.map((box) => (
-        <BoundingBox
-          key={box.id}
-          box={box}
-          zoomLevel={zoomLevel}
-        />
-      ))}
+      <div className="absolute inset-0 pointer-events-none">
+        {boundingBoxes.map((box) => {
+          const screenCoords = getScreenCoordinates(box.x, box.y);
+          return (
+            <div
+              key={box.id}
+              className="absolute pointer-events-auto"
+              style={{
+                left: screenCoords.x,
+                top: screenCoords.y,
+                width: box.width * zoomLevel,
+                height: box.height * zoomLevel,
+              }}
+            >
+              <BoundingBox
+                box={box}
+                zoomLevel={zoomLevel}
+              />
+            </div>
+          );
+        })}
+      </div>
 
       {/* Preview box while creating */}
       {previewBox && isCreatingBox && (
         <div
           className="absolute border-2 border-blue-500 bg-blue-500 bg-opacity-20 pointer-events-none"
           style={{
-            left: previewBox.x * zoomLevel + panOffset.x,
-            top: previewBox.y * zoomLevel + panOffset.y,
+            left: getScreenCoordinates(previewBox.x, previewBox.y).x,
+            top: getScreenCoordinates(previewBox.x, previewBox.y).y,
             width: previewBox.width * zoomLevel,
             height: previewBox.height * zoomLevel,
           }}

@@ -96,20 +96,33 @@ export function BoundingBox({ box, zoomLevel }: BoundingBoxProps) {
           if (direction.includes('n')) {
             const proposedY = startBox.y + deltaY;
             const proposedHeight = startBox.height - deltaY;
-            newY = Math.max(0, proposedY);
-            newHeight = Math.max(10, Math.min(proposedHeight + (proposedY - newY), startBox.y + startBox.height));
+            if (proposedY >= 0 && proposedHeight >= 10) {
+              newY = proposedY;
+              newHeight = proposedHeight;
+            }
           }
+          
           if (direction.includes('s')) {
-            newHeight = Math.max(10, Math.min(startBox.height + deltaY, loadedImage.height - startBox.y));
+            const proposedHeight = startBox.height + deltaY;
+            if (startBox.y + proposedHeight <= loadedImage.height && proposedHeight >= 10) {
+              newHeight = proposedHeight;
+            }
           }
+          
           if (direction.includes('w')) {
             const proposedX = startBox.x + deltaX;
             const proposedWidth = startBox.width - deltaX;
-            newX = Math.max(0, proposedX);
-            newWidth = Math.max(10, Math.min(proposedWidth + (proposedX - newX), startBox.x + startBox.width));
+            if (proposedX >= 0 && proposedWidth >= 10) {
+              newX = proposedX;
+              newWidth = proposedWidth;
+            }
           }
+          
           if (direction.includes('e')) {
-            newWidth = Math.max(10, Math.min(startBox.width + deltaX, loadedImage.width - startBox.x));
+            const proposedWidth = startBox.width + deltaX;
+            if (startBox.x + proposedWidth <= loadedImage.width && proposedWidth >= 10) {
+              newWidth = proposedWidth;
+            }
           }
           
           updateBoundingBox(box.id, {
@@ -124,78 +137,72 @@ export function BoundingBox({ box, zoomLevel }: BoundingBoxProps) {
     
     const handleMouseUp = () => {
       if (dragRef.current) {
-        setIsDragging(false);
-        setDragStart(null);
         dragRef.current = null;
+        setIsDragging(false);
       }
+      
       if (resizeRef.current) {
-        setIsResizing(false);
         resizeRef.current = null;
+        setIsResizing(false);
       }
     };
     
-    if (dragRef.current || resizeRef.current) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [box.id, selectedBoxId, zoomLevel, updateBoundingBox, setIsDragging, setIsResizing, setDragStart]);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [selectedBoxId, box.id, box.width, box.height, zoomLevel, updateBoundingBox, setIsDragging, setIsResizing]);
+  
+  // Resize handles
+  const resizeHandles = [
+    { direction: 'nw', cursor: 'nw-resize', className: 'top-0 left-0 -translate-x-1/2 -translate-y-1/2' },
+    { direction: 'n', cursor: 'n-resize', className: 'top-0 left-1/2 -translate-x-1/2 -translate-y-1/2' },
+    { direction: 'ne', cursor: 'ne-resize', className: 'top-0 right-0 translate-x-1/2 -translate-y-1/2' },
+    { direction: 'e', cursor: 'e-resize', className: 'top-1/2 right-0 translate-x-1/2 -translate-y-1/2' },
+    { direction: 'se', cursor: 'se-resize', className: 'bottom-0 right-0 translate-x-1/2 translate-y-1/2' },
+    { direction: 's', cursor: 's-resize', className: 'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2' },
+    { direction: 'sw', cursor: 'sw-resize', className: 'bottom-0 left-0 -translate-x-1/2 translate-y-1/2' },
+    { direction: 'w', cursor: 'w-resize', className: 'top-1/2 left-0 -translate-x-1/2 -translate-y-1/2' },
+  ];
   
   return (
-    <div
-      className={`absolute cursor-move group ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
-      style={{
-        left: `${box.x}px`,
-        top: `${box.y}px`,
-        width: `${box.width}px`,
-        height: `${box.height}px`,
-        borderColor: box.color,
-        backgroundColor: `${box.color}20`,
-        zIndex: isSelected ? 20 : 10,
-      }}
-      onMouseDown={handleMouseDown}
-    >
-      <div 
-        className="absolute inset-0 border-2"
+    <div className="relative w-full h-full">
+      {/* Main bounding box */}
+      <div
+        className={`
+          w-full h-full border-2 cursor-move
+          ${isSelected ? 'border-blue-500' : 'border-gray-400'}
+          ${isSelected ? 'bg-blue-500 bg-opacity-10' : 'bg-transparent'}
+        `}
         style={{ borderColor: box.color }}
-      />
-      
-      {/* Label */}
-      <div 
-        className="absolute -top-6 left-0 px-2 py-1 text-xs text-white rounded whitespace-nowrap"
-        style={{ backgroundColor: box.color }}
+        onMouseDown={handleMouseDown}
       >
-        <span>{box.label}</span>
-        <span className="ml-1 opacity-75">#{box.id.slice(-3)}</span>
+        {/* Label */}
+        <div
+          className="absolute -top-6 left-0 px-1 py-0.5 text-xs text-white rounded"
+          style={{ backgroundColor: box.color, fontSize: `${Math.max(10, 12 / zoomLevel)}px` }}
+        >
+          {box.label}
+        </div>
       </div>
       
       {/* Resize handles - only show when selected */}
       {isSelected && (
         <>
-          <div 
-            className="absolute -top-2 -left-2 w-4 h-4 bg-white border-2 rounded-sm shadow-sm cursor-nw-resize"
-            style={{ borderColor: box.color }}
-            onMouseDown={(e) => handleResizeMouseDown(e, 'nw')}
-          />
-          <div 
-            className="absolute -top-2 -right-2 w-4 h-4 bg-white border-2 rounded-sm shadow-sm cursor-ne-resize"
-            style={{ borderColor: box.color }}
-            onMouseDown={(e) => handleResizeMouseDown(e, 'ne')}
-          />
-          <div 
-            className="absolute -bottom-2 -left-2 w-4 h-4 bg-white border-2 rounded-sm shadow-sm cursor-sw-resize"
-            style={{ borderColor: box.color }}
-            onMouseDown={(e) => handleResizeMouseDown(e, 'sw')}
-          />
-          <div 
-            className="absolute -bottom-2 -right-2 w-4 h-4 bg-white border-2 rounded-sm shadow-sm cursor-se-resize"
-            style={{ borderColor: box.color }}
-            onMouseDown={(e) => handleResizeMouseDown(e, 'se')}
-          />
+          {resizeHandles.map(({ direction, cursor, className }) => (
+            <div
+              key={direction}
+              className={`absolute w-2 h-2 bg-blue-500 border border-white cursor-${cursor} ${className}`}
+              style={{ 
+                width: `${Math.max(6, 8 / zoomLevel)}px`, 
+                height: `${Math.max(6, 8 / zoomLevel)}px` 
+              }}
+              onMouseDown={(e) => handleResizeMouseDown(e, direction)}
+            />
+          ))}
         </>
       )}
     </div>
