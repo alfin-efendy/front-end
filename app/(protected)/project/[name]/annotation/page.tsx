@@ -6,12 +6,15 @@ import { useAnnotationStore } from '@/lib/useAnnotationStore';
 import { CanvasContainer } from '@/components/CanvasContainer';
 import { Sidebar } from '@/components/Sidebar';
 import { EditBoxModal } from '@/components/EditBoxModal';
-import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Toolbar, ToolType } from '@/components/toolbar';
 import { getAnnotation } from "./actions";
 import { useEffect, useState } from "react";
 import { useSearchParams } from 'next/navigation';
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
 export default function AnnotationPage() {
   const {
@@ -26,10 +29,11 @@ export default function AnnotationPage() {
     resetView,
     deleteBoundingBox,
     selectBoundingBox,
+    setZoomLevel,
   } = useAnnotationStore();
   
-  const [urlInput, setUrlInput] = React.useState('');
-  const [data, setData] = useState(null);
+  const [selectedTool, setSelectedTool] = useState<ToolType>("select");
+  const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   
@@ -45,7 +49,6 @@ export default function AnnotationPage() {
           // Load the image from the data
           if (data.urlFile) {
             loadImage(data.urlFile);
-            setUrlInput(data.urlFile);
           }
         }
       });
@@ -53,17 +56,23 @@ export default function AnnotationPage() {
       setError("Task Id Not Found");
     }
   }, [searchParams, loadImage]);
-  
-  const handleLoadImage = () => {
-    if (urlInput.trim()) {
-      loadImage(urlInput.trim());
-    }
+
+  const handleZoomChange = (newZoom: number) => {
+    setZoomLevel(newZoom);
   };
-  
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleLoadImage();
-    }
+
+  const handleToolChange = (tool: ToolType) => {
+    setSelectedTool(tool);
+  };
+
+  const handleUndo = () => {
+    // Implement undo functionality if needed
+    console.log('Undo action');
+  };
+
+  const handleRedo = () => {
+    // Implement redo functionality if needed
+    console.log('Redo action');
   };
   
   // Global keyboard shortcuts
@@ -75,6 +84,17 @@ export default function AnnotationPage() {
         selectBoundingBox(null);
       }
       
+      // Tool shortcuts
+      if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        setSelectedTool('select');
+      }
+      
+      if (e.key === 'p' || e.key === 'P') {
+        e.preventDefault();
+        setSelectedTool('pan');
+      }
+      
       // Zoom shortcuts
       if (e.ctrlKey || e.metaKey) {
         if (e.key === '=' || e.key === '+') {
@@ -83,13 +103,16 @@ export default function AnnotationPage() {
         } else if (e.key === '-') {
           e.preventDefault();
           zoomOut();
+        } else if (e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          resetView();
         }
       }
     };
     
     document.addEventListener('keydown', handleKeyboardShortcuts);
     return () => document.removeEventListener('keydown', handleKeyboardShortcuts);
-  }, [selectedBoxId, deleteBoundingBox, selectBoundingBox, zoomIn, zoomOut]);
+  }, [selectedBoxId, deleteBoundingBox, selectBoundingBox, zoomIn, zoomOut, resetView]);
 
   if (error) {
     return (
@@ -100,79 +123,57 @@ export default function AnnotationPage() {
   }
   
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Header/Toolbar */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-semibold text-gray-900">Canvas Annotation Editor</h1>
-            <div className="flex items-center space-x-2">
-              <Input
-                type="url"
-                placeholder="Enter image URL..."
-                className="w-80"
-                value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-              />
-              <Button onClick={handleLoadImage}>
-                Load Image
-              </Button>
-            </div>
+    <div className="flex flex-col h-screen">
+      <ResizablePanelGroup
+        className="flex flex-row"
+        direction="horizontal"
+      >
+        <ResizablePanel defaultSize={85} className="flex flex-col w-full">
+          {/* Toolbar */}
+          <div className="flex flex-row border-b">
+            <Toolbar
+              selectedTool={selectedTool}
+              onToolChange={handleToolChange}
+              zoomLevel={zoomLevel}
+              onZoomChange={handleZoomChange}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+              canUndo={false} // Set to true when undo functionality is implemented
+              canRedo={false} // Set to true when redo functionality is implemented
+              className="w-auto flex-shrink-0"
+            />
+            
+            {/* Labels Display */}
+            {data?.labels && (
+              <div className="overflow-auto w-full flex flex-row items-center content-start space-x-3 p-2">
+                {data.labels.map((label: any) => (
+                  <div
+                    key={label.id}
+                    className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium shadow min-w-16 text-white"
+                    style={{ backgroundColor: label.color }}
+                  >
+                    {label.name}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           
-          <div className="flex items-center space-x-3">
-            {/* Zoom Controls */}
-            <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={zoomOut}
-                className="p-2 hover:bg-white"
-                title="Zoom Out"
-              >
-                <ZoomOut className="w-4 h-4" />
-              </Button>
-              <span className="px-3 py-1 text-sm font-medium text-gray-700 min-w-[60px] text-center">
-                {Math.round(zoomLevel * 100)}%
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={zoomIn}
-                className="p-2 hover:bg-white"
-                title="Zoom In"
-              >
-                <ZoomIn className="w-4 h-4" />
-              </Button>
+          {/* Canvas Area */}
+          <div className="flex-1 overflow-hidden">
+            <div className="h-full relative">
+              <CanvasContainer selectedTool={selectedTool} />
             </div>
-            
-            {/* Reset View */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={resetView}
-              className="p-2 text-gray-600 hover:text-gray-900"
-              title="Reset View"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </Button>
           </div>
-        </div>
-      </header>
-      
-      {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Canvas Area */}
-        <main className="flex-1 p-6 overflow-hidden">
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 h-full min-h-[600px] relative">
-            <CanvasContainer />
-          </div>
-        </main>
+        </ResizablePanel>
+        
+        <ResizableHandle withHandle />
         
         {/* Sidebar */}
-        <Sidebar />
-      </div>
+        <ResizablePanel defaultSize={15}>
+          <Sidebar />
+        </ResizablePanel>
+      </ResizablePanelGroup>
       
       {/* Edit Modal */}
       <EditBoxModal />
