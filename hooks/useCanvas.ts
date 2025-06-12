@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import type { CanvasSize } from "@/types/canvas"
 import type { AnnotationClient } from "@/types/annotation"
 import { isOnBorder, isOnTitle, isInsideAnnotation, getCursorStyle } from "@/lib/interaction"
@@ -254,26 +254,36 @@ export function useCanvas({
     [annotations, currentLabel, getCanvasCoordinates, image, selectedAnnotation, selectedTool, setSelectedAnnotation],
   )
 
+  // Throttle mouse move events to improve performance
+  const throttledMouseMove = useRef<NodeJS.Timeout | null>(null)
+
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       if (!canvasRef.current || !image) return
 
-      // Update cursor style
-      updateCursor(e)
-
-      // Handle panning
-      if (isPanning && canvasContainerRef.current) {
-        const dx = e.clientX - panStart.x
-        const dy = e.clientY - panStart.y
-
-        canvasContainerRef.current.scrollLeft -= dx
-        canvasContainerRef.current.scrollTop -= dy
-
-        setPanStart({ x: e.clientX, y: e.clientY })
-        return
+      // Clear previous timeout
+      if (throttledMouseMove.current) {
+        clearTimeout(throttledMouseMove.current)
       }
 
-      const { x, y } = getCanvasCoordinates(e.clientX, e.clientY)
+      // Update cursor style immediately
+      updateCursor(e)
+
+      // Throttle the actual move handling
+      throttledMouseMove.current = setTimeout(() => {
+        // Handle panning
+        if (isPanning && canvasContainerRef.current) {
+          const dx = e.clientX - panStart.x
+          const dy = e.clientY - panStart.y
+
+          canvasContainerRef.current.scrollLeft -= dx
+          canvasContainerRef.current.scrollTop -= dy
+
+          setPanStart({ x: e.clientX, y: e.clientY })
+          return
+        }
+
+        const { x, y } = getCanvasCoordinates(e.clientX, e.clientY)
 
       // Handle resizing
       if (isResizing && selectedAnnotation) {
@@ -381,7 +391,7 @@ export function useCanvas({
             height: y - (prev.y || 0),
           }
         })
-      }
+      }, 16) // ~60fps throttling
     },
     [
       annotations,
@@ -396,7 +406,6 @@ export function useCanvas({
       isResizing,
       panStart.x,
       panStart.y,
-      renderCanvas,
       resizeHandle,
       selectedAnnotation,
       updateAnnotation,

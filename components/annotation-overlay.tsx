@@ -1,7 +1,6 @@
-
 "use client";
 
-import React from "react";
+import React, { memo } from "react";
 import type { AnnotationClient } from "@/types/annotation";
 
 interface AnnotationBoxProps {
@@ -16,7 +15,7 @@ interface AnnotationBoxProps {
   onStartDrag: (e: React.MouseEvent) => void;
 }
 
-export function AnnotationBox({
+export const AnnotationBox = memo(function AnnotationBoxComponent({
   annotation,
   isSelected,
   isDrawing = false,
@@ -112,7 +111,7 @@ export function AnnotationBox({
     };
 
     let labelPosition = {};
-    
+
     switch (annotation.titlePosition) {
       case "Top Left":
         labelPosition = { top: -24, left: 0 };
@@ -177,7 +176,7 @@ export function AnnotationBox({
       {renderResizeHandles()}
     </div>
   );
-}
+});
 
 interface AnnotationOverlayProps {
   annotations: AnnotationClient[];
@@ -192,7 +191,7 @@ interface AnnotationOverlayProps {
   onStartDrag: (annotation: AnnotationClient, e: React.MouseEvent) => void;
 }
 
-export function AnnotationOverlay({
+export const AnnotationOverlay = memo(function AnnotationOverlayComponent({
   annotations,
   selectedAnnotation,
   currentAnnotation,
@@ -244,4 +243,4 @@ export function AnnotationOverlay({
       )}
     </div>
   );
-}
+});
