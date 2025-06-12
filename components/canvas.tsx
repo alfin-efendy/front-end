@@ -81,7 +81,7 @@ export function DocumentCanvas({
       >
         <div className="relative">
           <canvas
-            className={cn(className)}
+            className={cn(className, "border border-gray-200 shadow-sm rounded-md bg-white")}
             ref={canvasRef}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}

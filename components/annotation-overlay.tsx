@@ -2,7 +2,6 @@
 "use client";
 
 import React from "react";
-import { cn } from "@/lib/utils";
 import type { AnnotationClient } from "@/types/annotation";
 
 interface AnnotationBoxProps {
@@ -33,31 +32,31 @@ export function AnnotationBox({
 
   // Calculate position and size
   const style = {
-    left: `${annotation.x * zoomLevel}px`,
-    top: `${annotation.y * zoomLevel}px`,
-    width: `${annotation.width * zoomLevel}px`,
-    height: `${annotation.height * zoomLevel}px`,
+    left: `${annotation.x}px`,
+    top: `${annotation.y}px`,
+    width: `${annotation.width}px`,
+    height: `${annotation.height}px`,
   };
 
   // Determine colors based on state
   const getColors = () => {
     if (isSelected) {
       return {
-        border: "border-red-500",
-        bg: "bg-red-500/20",
-        text: "text-red-500",
+        border: "border-blue-500",
+        bg: "bg-blue-500/10",
+        handle: "bg-blue-500",
       };
     } else if (!hasLabel) {
       return {
-        border: "border-orange-500",
-        bg: "bg-orange-500/20",
-        text: "text-orange-500",
+        border: "border-orange-400",
+        bg: "bg-orange-400/10",
+        handle: "bg-orange-400",
       };
     } else {
       return {
         border: "border-green-500",
-        bg: "bg-green-500/20",
-        text: "text-green-500",
+        bg: "bg-green-500/10",
+        handle: "bg-green-500",
       };
     }
   };
@@ -66,95 +65,91 @@ export function AnnotationBox({
 
   // Handle resize handles
   const renderResizeHandles = () => {
-    if (!isSelected || isLocked) return null;
+    if (!isSelected || isLocked || isDrawing) return null;
 
-    const handleSize = 14;
+    const handleSize = 8;
     const handles = [
-      { position: "top-left", cursor: "nw-resize", x: -handleSize/2, y: -handleSize/2 },
-      { position: "top-right", cursor: "ne-resize", x: annotation.width * zoomLevel - handleSize/2, y: -handleSize/2 },
-      { position: "bottom-left", cursor: "sw-resize", x: -handleSize/2, y: annotation.height * zoomLevel - handleSize/2 },
-      { position: "bottom-right", cursor: "se-resize", x: annotation.width * zoomLevel - handleSize/2, y: annotation.height * zoomLevel - handleSize/2 },
-      { position: "top", cursor: "n-resize", x: (annotation.width * zoomLevel)/2 - handleSize/2, y: -handleSize/2 },
-      { position: "bottom", cursor: "s-resize", x: (annotation.width * zoomLevel)/2 - handleSize/2, y: annotation.height * zoomLevel - handleSize/2 },
-      { position: "left", cursor: "w-resize", x: -handleSize/2, y: (annotation.height * zoomLevel)/2 - handleSize/2 },
-      { position: "right", cursor: "e-resize", x: annotation.width * zoomLevel - handleSize/2, y: (annotation.height * zoomLevel)/2 - handleSize/2 },
+      { position: "nw-resize", style: { top: -4, left: -4 } },
+      { position: "n-resize", style: { top: -4, left: "50%", transform: "translateX(-50%)" } },
+      { position: "ne-resize", style: { top: -4, right: -4 } },
+      { position: "w-resize", style: { top: "50%", left: -4, transform: "translateY(-50%)" } },
+      { position: "e-resize", style: { top: "50%", right: -4, transform: "translateY(-50%)" } },
+      { position: "sw-resize", style: { bottom: -4, left: -4 } },
+      { position: "s-resize", style: { bottom: -4, left: "50%", transform: "translateX(-50%)" } },
+      { position: "se-resize", style: { bottom: -4, right: -4 } },
     ];
 
-    return handles.map((handle) => (
+    return handles.map((handle, index) => (
       <div
-        key={handle.position}
-        className="absolute w-[14px] h-[14px] bg-white border-2 border-red-500 rounded-full cursor-pointer"
+        key={index}
+        className={`absolute ${colors.handle} border border-white cursor-${handle.position}`}
         style={{
-          left: `${handle.x}px`,
-          top: `${handle.y}px`,
-          cursor: handle.cursor,
+          ...handle.style,
+          width: handleSize,
+          height: handleSize,
+          borderRadius: "50%",
         }}
         onMouseDown={(e) => {
           e.stopPropagation();
-          onStartResize(handle.position, e);
+          onStartResize(handle.position.split("-")[0], e);
         }}
       />
     ));
   };
 
-  // Handle title rendering
-  const renderTitle = () => {
-    if (annotation.titlePosition === "Hide" || !hasLabel) return null;
+  // Render label
+  const renderLabel = () => {
+    if (!hasLabel || annotation.titlePosition === "Hide") return null;
 
-    const titleStyle: React.CSSProperties = {
-      position: "absolute",
-      backgroundColor: "rgba(0, 0, 0, 0.7)",
-      color: "white",
-      padding: "2px 5px",
+    const labelStyle = {
       fontSize: "12px",
-      fontFamily: "Arial",
-      borderRadius: "2px",
-      whiteSpace: "nowrap",
-      pointerEvents: "none",
+      fontWeight: "500",
+      color: "#fff",
+      backgroundColor: "rgba(0, 0, 0, 0.8)",
+      padding: "2px 6px",
+      borderRadius: "3px",
+      whiteSpace: "nowrap" as const,
     };
 
-    // Calculate position based on titlePosition
+    let labelPosition = {};
+    
     switch (annotation.titlePosition) {
       case "Top Left":
-        titleStyle.top = `${-20 * zoomLevel}px`;
-        titleStyle.left = "0px";
+        labelPosition = { top: -24, left: 0 };
         break;
       case "Top Right":
-        titleStyle.top = `${-20 * zoomLevel}px`;
-        titleStyle.right = "0px";
+        labelPosition = { top: -24, right: 0 };
         break;
       case "Top Center":
-        titleStyle.top = `${-20 * zoomLevel}px`;
-        titleStyle.left = "50%";
-        titleStyle.transform = "translateX(-50%)";
-        break;
-      case "Left":
-        titleStyle.left = `${-100 * zoomLevel}px`;
-        titleStyle.top = "50%";
-        titleStyle.transform = "translateY(-50%)";
-        break;
-      case "Right":
-        titleStyle.right = `${-100 * zoomLevel}px`;
-        titleStyle.top = "50%";
-        titleStyle.transform = "translateY(-50%)";
+        labelPosition = { top: -24, left: "50%", transform: "translateX(-50%)" };
         break;
       case "Bottom Left":
-        titleStyle.bottom = `${-20 * zoomLevel}px`;
-        titleStyle.left = "0px";
+        labelPosition = { bottom: -24, left: 0 };
         break;
       case "Bottom Right":
-        titleStyle.bottom = `${-20 * zoomLevel}px`;
-        titleStyle.right = "0px";
+        labelPosition = { bottom: -24, right: 0 };
         break;
       case "Bottom Center":
-        titleStyle.bottom = `${-20 * zoomLevel}px`;
-        titleStyle.left = "50%";
-        titleStyle.transform = "translateX(-50%)";
+        labelPosition = { bottom: -24, left: "50%", transform: "translateX(-50%)" };
         break;
+      case "Left":
+        labelPosition = { top: "50%", right: "100%", marginRight: "4px", transform: "translateY(-50%)" };
+        break;
+      case "Right":
+        labelPosition = { top: "50%", left: "100%", marginLeft: "4px", transform: "translateY(-50%)" };
+        break;
+      default:
+        labelPosition = { top: -24, left: 0 };
     }
 
     return (
-      <div style={titleStyle}>
+      <div
+        className="absolute z-10 pointer-events-none"
+        style={{
+          ...labelPosition,
+          ...labelStyle,
+        }}
+      >
         {annotation.labelName}
       </div>
     );
@@ -162,28 +157,23 @@ export function AnnotationBox({
 
   return (
     <div
-      className={cn(
-        "absolute border-2 cursor-pointer select-none",
-        colors.border,
-        colors.bg,
-        isLocked && "border-dashed cursor-not-allowed",
-        isDrawing && "border-blue-500 bg-blue-500/20"
-      )}
+      className={`absolute border-2 ${colors.border} ${colors.bg} ${
+        isLocked ? "border-dashed" : "border-solid"
+      } ${isSelected ? "z-20" : "z-10"} ${
+        !isDrawing && !isLocked ? "cursor-move hover:shadow-lg" : ""
+      } transition-all duration-200`}
       style={style}
       onClick={(e) => {
         e.stopPropagation();
-        if (!isLocked) {
-          onSelect();
-        }
+        onSelect();
       }}
       onMouseDown={(e) => {
-        e.stopPropagation();
         if (!isLocked && !isDrawing) {
           onStartDrag(e);
         }
       }}
     >
-      {renderTitle()}
+      {renderLabel()}
       {renderResizeHandles()}
     </div>
   );

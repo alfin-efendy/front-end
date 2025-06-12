@@ -70,25 +70,17 @@ export function useCanvas({
 
     if (!canvas || !ctx || !image) return
 
-    // Use a try-catch to prevent potential errors from causing infinite loops
     try {
-      // If we have an image reference, use it
       if (imageRef.current) {
         // Clear the canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height)
-
         // Draw the image at the canvas dimensions
         ctx.drawImage(imageRef.current, 0, 0, canvas.width, canvas.height)
       } else {
-        // If we don't have an image reference yet, create one
         const img = new Image()
         img.onload = () => {
           imageRef.current = img
-
-          // Clear the canvas
           ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-          // Draw the image at the canvas dimensions
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
         }
         img.src = image
@@ -498,7 +490,7 @@ export function useCanvas({
       // Important: Set the actual canvas dimensions
       canvas.width = containerWidth
       canvas.height = containerWidth * aspectRatio
-
+      
       // Update canvas size state
       const newSize = {
         width: canvas.width,

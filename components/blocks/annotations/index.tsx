@@ -86,7 +86,7 @@ export const AnnotationsPage = ({ data }: Props) => {
   const {
     canvasRef,
     canvasContainerRef,
-    canvasDimensions, // Changed from canvasSize
+    canvasSize: canvasDimensions,
     isDrawing,
     isDragging,
     isResizing,
@@ -201,8 +201,8 @@ export const AnnotationsPage = ({ data }: Props) => {
                   selectedAnnotation={selectedAnnotation}
                   currentAnnotation={currentAnnotation}
                   isDrawing={isDrawing}
-                  canvasWidth={canvasSize.width}
-                  canvasHeight={canvasSize.height}
+                  canvasWidth={canvasDimensions.width}
+                  canvasHeight={canvasDimensions.height}
                   zoomLevel={zoomLevel}
                   onSelectAnnotation={setSelectedAnnotation}
                   onStartResize={handleAnnotationResize}
