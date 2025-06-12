@@ -1,8 +1,31 @@
-modules = ["nodejs-20", "web"]
 run = "npm run dev"
+entrypoint = "index.js"
+hidden = [".config", "package-lock.json", ".next", ".swc"]
+modules = ["nodejs-22"]
 
 [nix]
-channel = "stable-24_05"
+channel = "stable-24_11"
+
+[env]
+NEXT_TELEMETRY_DISABLED = "1"
 
 [deployment]
-run = ["sh", "-c", "npm run dev"]
+build = ["npm", "run", "build"]
+run = ["npm", "run", "start"]
+deploymentTarget = "cloudrun"
+
+[[ports]]
+localPort = 3000
+externalPort = 80
+
+[workflows]
+runButton = "Dev Server"
+
+[[workflows.workflow]]
+name = "Dev Server"
+author = 43751808
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm run dev"
