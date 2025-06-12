@@ -25,6 +25,8 @@ import { Separator } from "@/components/ui/separator";
 import { useRouter, useSearchParams } from "next/navigation";
 import { color } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useImageLoader } from "@/hooks/useImageLoader";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Props = {
   data: InitialAnnotationData;
@@ -34,7 +36,6 @@ export const AnnotationsPage = ({ data }: Props) => {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [selectedTool, setSelectedTool] = useState<"select" | "pan">("select");
   const [image, setImage] = useState<string>(data.urlFile);
-  const imageRef = useRef<HTMLImageElement | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [canvasSize, setCanvasSize] = useState<CanvasSize>({
     width: 0,
@@ -56,6 +57,13 @@ export const AnnotationsPage = ({ data }: Props) => {
   const toggleHelp = () => {
     setShowHelp(!showHelp);
   };
+  
+  const {
+    dataUrl,
+    imageRef,
+    loading: imgLoading,
+    error: imgError,
+  } = useImageLoader(image);
 
   const {
     annotations,
@@ -82,7 +90,7 @@ export const AnnotationsPage = ({ data }: Props) => {
     handleMouseUp,
     resizeCanvas,
   } = useCanvas({
-    image: image,
+    image: dataUrl!,
     annotations: annotations,
     selectedAnnotation,
     currentLabel: "",
@@ -120,20 +128,11 @@ export const AnnotationsPage = ({ data }: Props) => {
 
   const handleChangeImage = async (id: string, imageUrl: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    const img = new Image();
 
     params.set("task", String(id));
     router.push(`?${params.toString()}`, { scroll: false });
 
     setImage(imageUrl);
-    img.src = image;
-
-    await new Promise<void>((resolve) => {
-      img.onload = () => {
-        imageRef.current = img;
-        resolve();
-      };
-    });
   };
 
   return (
@@ -161,7 +160,9 @@ export const AnnotationsPage = ({ data }: Props) => {
               {data.labels.map((item) => (
                 <div
                   key={item.id}
-                  className={"inline-flex items-center rounded-full px-3 py-1 text-sm font-medium shadow min-w-16"}
+                  className={
+                    "inline-flex items-center rounded-full px-3 py-1 text-sm font-medium shadow min-w-16"
+                  }
                   style={{ backgroundColor: item.color }}
                 >
                   {item.name}
@@ -170,18 +171,22 @@ export const AnnotationsPage = ({ data }: Props) => {
             </div>
           </div>
           <div className="h-full max-h-[calc(100vh-9.55rem)] overflow-auto">
-            <DocumentCanvas
-              className="bg-green-500 "
-              image={data?.urlFile || ""}
-              canvasRef={canvasRef}
-              canvasContainerRef={canvasContainerRef}
-              handleMouseDown={handleMouseDown}
-              handleMouseMove={handleMouseMove}
-              handleMouseUp={handleMouseUp}
-              zoomLevel={zoomLevel}
-              onCanvasResize={resizeCanvas}
-              onZoomChange={handleZoomChange}
-            />
+            {imgLoading ? (
+              <Skeleton className="rounded-lg w-full h-full" />
+            ) : (
+              <DocumentCanvas
+                className="bg-green-500 "
+                image={data?.urlFile || ""}
+                canvasRef={canvasRef}
+                canvasContainerRef={canvasContainerRef}
+                handleMouseDown={handleMouseDown}
+                handleMouseMove={handleMouseMove}
+                handleMouseUp={handleMouseUp}
+                zoomLevel={zoomLevel}
+                onCanvasResize={resizeCanvas}
+                onZoomChange={handleZoomChange}
+              />
+            )}
           </div>
         </ResizablePanel>
         <ResizableHandle withHandle />

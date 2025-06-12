@@ -9,7 +9,7 @@ import { useViewportSize } from "@/hooks/useViewportSize"
 import { X } from "lucide-react"
 
 type ResizeDirection = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw"
-type ModalSize = "xs" | "sm" | "md" | "lg" | "xl" | "full"
+type ModalSize = "xs" | "sm" | "md" | "lg" | "xl" | "full" | "auto"
 
 interface ResizableModalProps {
   open: boolean
@@ -24,6 +24,8 @@ interface ResizableModalProps {
   minSize?: { width: number; height: number }
   maxSize?: { width: number; height: number }
   closeOnOutsideClick?: boolean
+  autoSizeBuffer?: { width: number; height: number } // Extra padding for auto-size
+  onSizeChange?: (size: { width: number; height: number }) => void
 }
 
 export function ResizableModal({
@@ -39,9 +41,20 @@ export function ResizableModal({
   minSize = { width: 300, height: 200 },
   maxSize,
   closeOnOutsideClick = true,
+  autoSizeBuffer = { width: 32, height: 32 },
+  onSizeChange,
 }: ResizableModalProps) {
   const isMobile = useMediaQuery("(max-width: 767px)")
   const viewportSize = useViewportSize()
+
+  // Refs for measuring content
+  const contentRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLDivElement>(null)
+  const footerRef = useRef<HTMLDivElement>(null)
+  const modalRef = useRef<HTMLDivElement>(null)
+  const backdropRef = useRef<HTMLDivElement>(null)
+  const animationFrameRef = useRef<number>(0)
+  const resizeObserverRef = useRef<ResizeObserver | null>(null)
 
   // Calculate size based on variant and viewport
   const calculatedSize = useMemo(() => {
@@ -54,7 +67,12 @@ export function ResizableModal({
       return { width: 500, height: 400 }
     }
 
-    const sizeMap: Record<ModalSize, { width: number; height: number }> = {
+    // Auto size will be calculated separately
+    if (size === "auto") {
+      return { width: 500, height: 400 } // Initial fallback
+    }
+
+    const sizeMap: Record<Exclude<ModalSize, "auto">, { width: number; height: number }> = {
       xs: {
         width: Math.min(320, vw * 0.9),
         height: Math.min(240, vh * 0.6),
@@ -104,10 +122,7 @@ export function ResizableModal({
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [isResizing, setIsResizing] = useState<ResizeDirection | null>(null)
   const [isDragging, setIsDragging] = useState(false)
-
-  const modalRef = useRef<HTMLDivElement>(null)
-  const backdropRef = useRef<HTMLDivElement>(null)
-  const animationFrameRef = useRef<number>(0)
+  const [isAutoSizing, setIsAutoSizing] = useState(size === "auto")
 
   // Use refs to store current values to avoid stale closures
   const sizeRef = useRef(modalSize)
@@ -115,11 +130,111 @@ export function ResizableModal({
   const minSizeRef = useRef(minSize)
   const maxSizeRef = useRef(calculatedMaxSize)
 
-  // Update modal size when calculated size changes
+  // Auto-size calculation function
+  const calculateAutoSize = useCallback(() => {
+    if (size !== "auto" || !contentRef.current || !open) return
+
+    // Temporarily set a large size to measure natural content size
+    const tempWidth = Math.min(calculatedMaxSize.width, 1200)
+    const tempHeight = Math.min(calculatedMaxSize.height, 800)
+
+    // Create a temporary container to measure content
+    const measureContainer = document.createElement("div")
+    measureContainer.style.cssText = `
+      position: absolute;
+      top: -9999px;
+      left: -9999px;
+      width: ${tempWidth - autoSizeBuffer.width}px;
+      max-width: ${tempWidth - autoSizeBuffer.width}px;
+      visibility: hidden;
+      pointer-events: none;
+    `
+
+    // Clone the content for measurement
+    const contentClone = contentRef.current.cloneNode(true) as HTMLElement
+    measureContainer.appendChild(contentClone)
+    document.body.appendChild(measureContainer)
+
+    // Measure dimensions
+    const contentRect = measureContainer.getBoundingClientRect()
+    let naturalWidth = Math.ceil(contentRect.width)
+    let naturalHeight = Math.ceil(contentRect.height)
+
+    // Add header and footer heights
+    if (headerRef.current) {
+      naturalHeight += headerRef.current.offsetHeight
+    }
+    if (footerRef.current) {
+      naturalHeight += footerRef.current.offsetHeight
+    }
+
+    // Add buffer
+    naturalWidth += autoSizeBuffer.width
+    naturalHeight += autoSizeBuffer.height
+
+    // Apply min/max constraints
+    const constrainedWidth = Math.max(
+      minSize.width,
+      Math.min(calculatedMaxSize.width, naturalWidth)
+    )
+    const constrainedHeight = Math.max(
+      minSize.height,
+      Math.min(calculatedMaxSize.height, naturalHeight)
+    )
+
+    // Cleanup
+    document.body.removeChild(measureContainer)
+
+    const newSize = { width: constrainedWidth, height: constrainedHeight }
+
+    // Only update if size changed significantly (avoid flickering)
+    const sizeDiff = Math.abs(sizeRef.current.width - constrainedWidth) + 
+                     Math.abs(sizeRef.current.height - constrainedHeight)
+    
+    if (sizeDiff > 5) {
+      setModalSize(newSize)
+      sizeRef.current = newSize
+      onSizeChange?.(newSize)
+    }
+  }, [size, open, calculatedMaxSize, minSize, autoSizeBuffer, onSizeChange])
+
+  // Set up ResizeObserver for auto-sizing
   useEffect(() => {
-    setModalSize(calculatedSize)
-    sizeRef.current = calculatedSize
-  }, [calculatedSize])
+    if (size === "auto" && contentRef.current && open) {
+      resizeObserverRef.current = new ResizeObserver(() => {
+        // Debounce the auto-size calculation
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current)
+        }
+        animationFrameRef.current = requestAnimationFrame(calculateAutoSize)
+      })
+
+      resizeObserverRef.current.observe(contentRef.current)
+
+      // Initial calculation
+      calculateAutoSize()
+
+      return () => {
+        if (resizeObserverRef.current) {
+          resizeObserverRef.current.disconnect()
+        }
+      }
+    }
+  }, [size, open, calculateAutoSize])
+
+  // Update modal size when calculated size changes (for non-auto sizes)
+  useEffect(() => {
+    if (size !== "auto") {
+      setModalSize(calculatedSize)
+      sizeRef.current = calculatedSize
+      onSizeChange?.(calculatedSize)
+    }
+  }, [calculatedSize, size, onSizeChange])
+
+  // Update auto-sizing state
+  useEffect(() => {
+    setIsAutoSizing(size === "auto")
+  }, [size])
 
   // Update refs when state changes
   useEffect(() => {
@@ -156,6 +271,13 @@ export function ResizableModal({
     }
   }, [open, centerModal])
 
+  // Re-center when modal size changes
+  useEffect(() => {
+    if (open && !isDragging && !isResizing) {
+      centerModal()
+    }
+  }, [modalSize, open, isDragging, isResizing, centerModal])
+
   // Handle backdrop click
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent) => {
@@ -171,6 +293,11 @@ export function ResizableModal({
     e.preventDefault()
     e.stopPropagation()
     setIsResizing(direction)
+
+    // Disable auto-sizing when manually resizing
+    if (isAutoSizing) {
+      setIsAutoSizing(false)
+    }
 
     const startX = e.clientX
     const startY = e.clientY
@@ -238,13 +365,16 @@ export function ResizableModal({
             break
         }
 
+        const newSize = { width: newWidth, height: newHeight }
+
         // Update refs immediately for next calculation
-        sizeRef.current = { width: newWidth, height: newHeight }
+        sizeRef.current = newSize
         positionRef.current = { x: newX, y: newY }
 
         // Batch state updates
-        setModalSize({ width: newWidth, height: newHeight })
+        setModalSize(newSize)
         setPosition({ x: newX, y: newY })
+        onSizeChange?.(newSize)
       })
     }
 
@@ -264,7 +394,7 @@ export function ResizableModal({
     document.addEventListener("mousemove", handleMouseMove)
     document.addEventListener("mouseup", handleMouseUp)
     document.body.style.userSelect = "none"
-  }, [])
+  }, [isAutoSizing, onSizeChange])
 
   // Optimized drag handler
   const handleDragStart = useCallback(
@@ -326,6 +456,9 @@ export function ResizableModal({
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)
       }
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect()
+      }
     }
   }, [])
 
@@ -340,7 +473,7 @@ export function ResizableModal({
               {description && <p className="text-sm text-muted-foreground">{description}</p>}
             </DrawerHeader>
           )}
-          <div className="px-4 pb-4">{children}</div>
+          <div ref={contentRef} className="px-4 pb-4">{children}</div>
           {footer && <DrawerFooter>{footer}</DrawerFooter>}
         </DrawerContent>
       </Drawer>
@@ -359,6 +492,7 @@ export function ResizableModal({
           "bg-background rounded-lg shadow-lg overflow-hidden flex flex-col relative border",
           isDragging && "cursor-grabbing",
           isResizing && "select-none",
+          isAutoSizing && "transition-all duration-200 ease-out",
           className,
         )}
         style={{
@@ -374,6 +508,7 @@ export function ResizableModal({
       >
         {/* Header with drag handle */}
         <div
+          ref={headerRef}
           className="p-4 pb-0 flex items-center justify-between cursor-grab active:cursor-grabbing border-b"
           onMouseDown={handleDragStart}
         >
@@ -394,47 +529,51 @@ export function ResizableModal({
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-4 overflow-auto">{children}</div>
+        <div ref={contentRef} className="flex-1 p-4 overflow-auto">{children}</div>
 
         {/* Footer */}
-        {footer && <div className="p-4 pt-0 border-t">{footer}</div>}
+        {footer && <div ref={footerRef} className="p-4 pt-0 border-t">{footer}</div>}
 
-        {/* Resize handles */}
-        {/* Corner handles */}
-        <div
-          className="absolute -top-1 -left-1 w-3 h-3 cursor-nw-resize bg-transparent hover:bg-blue-500/20 rounded-tl transition-colors"
-          onMouseDown={(e) => handleMouseDown(e, "nw")}
-        />
-        <div
-          className="absolute -top-1 -right-1 w-3 h-3 cursor-ne-resize bg-transparent hover:bg-blue-500/20 rounded-tr transition-colors"
-          onMouseDown={(e) => handleMouseDown(e, "ne")}
-        />
-        <div
-          className="absolute -bottom-1 -left-1 w-3 h-3 cursor-sw-resize bg-transparent hover:bg-blue-500/20 rounded-bl transition-colors"
-          onMouseDown={(e) => handleMouseDown(e, "sw")}
-        />
-        <div
-          className="absolute -bottom-1 -right-1 w-3 h-3 cursor-se-resize bg-transparent hover:bg-blue-500/20 rounded-br transition-colors"
-          onMouseDown={(e) => handleMouseDown(e, "se")}
-        />
+        {/* Resize handles - hidden for auto-sizing mode */}
+        {!isAutoSizing && (
+          <>
+            {/* Corner handles */}
+            <div
+              className="absolute -top-1 -left-1 w-3 h-3 cursor-nw-resize bg-transparent hover:bg-blue-500/20 rounded-tl transition-colors"
+              onMouseDown={(e) => handleMouseDown(e, "nw")}
+            />
+            <div
+              className="absolute -top-1 -right-1 w-3 h-3 cursor-ne-resize bg-transparent hover:bg-blue-500/20 rounded-tr transition-colors"
+              onMouseDown={(e) => handleMouseDown(e, "ne")}
+            />
+            <div
+              className="absolute -bottom-1 -left-1 w-3 h-3 cursor-sw-resize bg-transparent hover:bg-blue-500/20 rounded-bl transition-colors"
+              onMouseDown={(e) => handleMouseDown(e, "sw")}
+            />
+            <div
+              className="absolute -bottom-1 -right-1 w-3 h-3 cursor-se-resize bg-transparent hover:bg-blue-500/20 rounded-br transition-colors"
+              onMouseDown={(e) => handleMouseDown(e, "se")}
+            />
 
-        {/* Edge handles */}
-        <div
-          className="absolute -top-1 left-3 right-3 h-2 cursor-n-resize bg-transparent hover:bg-blue-500/20 transition-colors"
-          onMouseDown={(e) => handleMouseDown(e, "n")}
-        />
-        <div
-          className="absolute -bottom-1 left-3 right-3 h-2 cursor-s-resize bg-transparent hover:bg-blue-500/20 transition-colors"
-          onMouseDown={(e) => handleMouseDown(e, "s")}
-        />
-        <div
-          className="absolute -left-1 top-3 bottom-3 w-2 cursor-w-resize bg-transparent hover:bg-blue-500/20 transition-colors"
-          onMouseDown={(e) => handleMouseDown(e, "w")}
-        />
-        <div
-          className="absolute -right-1 top-3 bottom-3 w-2 cursor-e-resize bg-transparent hover:bg-blue-500/20 transition-colors"
-          onMouseDown={(e) => handleMouseDown(e, "e")}
-        />
+            {/* Edge handles */}
+            <div
+              className="absolute -top-1 left-3 right-3 h-2 cursor-n-resize bg-transparent hover:bg-blue-500/20 transition-colors"
+              onMouseDown={(e) => handleMouseDown(e, "n")}
+            />
+            <div
+              className="absolute -bottom-1 left-3 right-3 h-2 cursor-s-resize bg-transparent hover:bg-blue-500/20 transition-colors"
+              onMouseDown={(e) => handleMouseDown(e, "s")}
+            />
+            <div
+              className="absolute -left-1 top-3 bottom-3 w-2 cursor-w-resize bg-transparent hover:bg-blue-500/20 transition-colors"
+              onMouseDown={(e) => handleMouseDown(e, "w")}
+            />
+            <div
+              className="absolute -right-1 top-3 bottom-3 w-2 cursor-e-resize bg-transparent hover:bg-blue-500/20 transition-colors"
+              onMouseDown={(e) => handleMouseDown(e, "e")}
+            />
+          </>
+        )}
       </div>
     </div>
   )

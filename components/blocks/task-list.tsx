@@ -20,7 +20,7 @@ import {
   Loader,
   AlertTriangle,
 } from "lucide-react";
-import ImagePreview from "@/components/image-preview";
+import { ImagePreview } from "@/components/image-preview";
 import { useRouter } from "next/navigation";
 import { useTimeAgo } from "@/hooks/useTimeAgo";
 import { DataTableToolbar } from "../data-table/data-table-toolbar";
@@ -38,6 +38,7 @@ export const TaskList = ({ initialTasks }: Props) => {
     "status",
     parseAsArrayOf(parseAsString).withDefault([])
   );
+  const [imgHovered, setImgHovered] = useState(false);
 
   const filteredData = useMemo(() => {
     return tasks.filter((task) => {
@@ -57,18 +58,16 @@ export const TaskList = ({ initialTasks }: Props) => {
         ),
         cell: ({ cell }) => {
           const urlFile = cell.getValue<Task["urlFile"]>();
-          const { dataUrl, loading, error } = useImageLoader(urlFile);
 
-          if (loading) return <p>Loading image...</p>;
-          if (error) return <p className="text-red-500">Error: {error}</p>;
-          
           return (
-            <img
-              src={dataUrl!}
-              alt="Task File"
-              width={512}
-              height={512}
-              className="w-16 h-16 object-cover rounded border border-primary/10"
+            <ImagePreview
+              src={urlFile}
+              width={94}
+              height={94}
+              enableZoom={true}
+              onMouseEnter={() => setImgHovered(true)}
+              onMouseLeave={() => setImgHovered(false)}
+              className="rounded shadow"
             />
           );
         },
@@ -159,15 +158,15 @@ export const TaskList = ({ initialTasks }: Props) => {
   });
 
   const handleRowClick = (taskId: number) => {
-    router.push("/project/invoice/annotation?task=" + taskId);
+    if (!imgHovered) {
+      router.push("/project/invoice/annotation?task=" + taskId);
+    }
   };
 
   return (
     <DataTable
       table={table}
-      onRowClick={(row) => {
-        handleRowClick(row.id);
-      }}
+      onRowClick={(row) => handleRowClick(row.id)}
     >
       <DataTableToolbar table={table}>
         <DataTableFilterList table={table} />

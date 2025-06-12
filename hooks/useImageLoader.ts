@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useImageCacheStore } from '@/store/imageCacheStore';
 
 function blobToBase64(blob: Blob): Promise<string> {
@@ -11,16 +11,27 @@ function blobToBase64(blob: Blob): Promise<string> {
 }
 
 export function useImageLoader(url: string) {
-  const getImage = useImageCacheStore((s) => s.getImage);
-  const setImage = useImageCacheStore((s) => s.setImage);
-
+  const getCacheImage = useImageCacheStore((s) => s.getImage);
+  const setCacheImage = useImageCacheStore((s) => s.setImage);
+  const imageRef = useRef<HTMLImageElement | null>(null);
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const img = new Image();
+
+  const getImage = (img: string) => {
+     const cached = getCacheImage(img);
+
+     if (cached) {
+      setDataUrl(cached);
+      setLoading(false);
+      return;
+    }
+  }
 
   useEffect(() => {
     let canceled = false;
-    const cached = getImage(url);
+    const cached = getCacheImage(url);
     if (cached) {
       setDataUrl(cached);
       setLoading(false);
@@ -36,7 +47,7 @@ export function useImageLoader(url: string) {
 
         if (!canceled) {
           setDataUrl(base64);
-          setImage(url, base64);
+          setCacheImage(url, base64);
         }
       } catch (err: any) {
         if (!canceled) setError(err.message);
@@ -46,10 +57,22 @@ export function useImageLoader(url: string) {
     };
 
     load();
+    
+    if (dataUrl) {
+      new Promise<void>((resolve) => {
+      img.onload = () => {
+        imageRef.current = img;
+        resolve();
+      };
+    });
+
+      img.src = dataUrl;
+    }
+
     return () => {
       canceled = true;
     };
   }, [url]);
 
-  return { dataUrl, loading, error };
+  return { getImage, dataUrl, imageRef, loading, error };
 }

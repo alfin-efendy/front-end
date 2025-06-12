@@ -139,7 +139,7 @@ export const NewProject = ({ open, setOpen }: Props) => {
     <ResizableModal
       open={open}
       onOpenChange={setOpen}
-      size="xl"
+      size="auto"
       title="Create New Project"
     >
       <div className="mx-auto">

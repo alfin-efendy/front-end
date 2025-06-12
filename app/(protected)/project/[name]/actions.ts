@@ -7,7 +7,7 @@ export async function getTask(
   projectName: string
 ): Promise<{ data: Task[]; error?: string }> {
   const supabase = await createClient();
-  const requestHeaders = headers();
+  const requestHeaders = await headers();
   const host = (await requestHeaders).get("host");
   const protocol = (await requestHeaders).get("x-forwarded-proto") || "http";
   const { data: projectData, error: projectError } = await supabase

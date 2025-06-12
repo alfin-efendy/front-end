@@ -3,10 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET(
   request: NextRequest,
-  context: { params: { param: string[] } }
+  context: { params: Promise<{ param: string[] }> }
 ) {
   const { params } = context;
-  const param = params.param?.join("/") ?? "";
+  const param = (await params).param?.join("/") ?? "";
   const supabase = await createClient();
 
   if (!param) {

@@ -9,7 +9,7 @@ export async function getAnnotation(
   taskId: number
 ): Promise<{ data?: InitialAnnotationData; error?: string }> {
   const supabase = await createClient();
-  const requestHeaders = headers();
+  const requestHeaders = await headers();
   const host = (await requestHeaders).get("host");
   const protocol = (await requestHeaders).get("x-forwarded-proto") || "http";
 
