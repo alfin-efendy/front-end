@@ -62,6 +62,28 @@ export default function AnnotationPage() {
           if (data.urlFile) {
             loadImage(data.urlFile);
           }
+          
+          // Load existing annotations from database into the store
+          if (data.annotations && data.annotations.length > 0) {
+            // Clear existing bounding boxes first
+            useAnnotationStore.getState().clearBoundingBoxes();
+            
+            // Convert database annotations to bounding box format
+            data.annotations.forEach((annotation: any) => {
+              const label = data.labels?.find(l => l.id === annotation.label_id);
+              useAnnotationStore.getState().addBoundingBox({
+                x: annotation.x,
+                y: annotation.y,
+                width: annotation.width,
+                height: annotation.height,
+                label: label?.name || '',
+                color: label?.color || '#3b82f6'
+              });
+            });
+          } else {
+            // Clear existing bounding boxes if no annotations
+            useAnnotationStore.getState().clearBoundingBoxes();
+          }
         }
       });
     } else {
@@ -90,6 +112,34 @@ export default function AnnotationPage() {
     url.searchParams.set('task', taskId);
     window.history.pushState({}, '', url.toString());
     loadImage(urlFile);
+    
+    // Load annotations for the new task
+    getAnnotation(Number(taskId)).then(({ data, error }) => {
+      if (!error && data) {
+        // Load existing annotations from database into the store
+        if (data.annotations && data.annotations.length > 0) {
+          // Clear existing bounding boxes first
+          useAnnotationStore.getState().clearBoundingBoxes();
+          
+          // Convert database annotations to bounding box format
+          data.annotations.forEach((annotation: any) => {
+            const label = data.labels?.find(l => l.id === annotation.label_id);
+            useAnnotationStore.getState().addBoundingBox({
+              x: annotation.x,
+              y: annotation.y,
+              width: annotation.width,
+              height: annotation.height,
+              label: label?.name || '',
+              color: label?.color || '#3b82f6'
+            });
+          });
+        } else {
+          // Clear existing bounding boxes if no annotations
+          useAnnotationStore.getState().clearBoundingBoxes();
+        }
+        setData(data);
+      }
+    });
   };
 
   const handleSubmit = async () => {

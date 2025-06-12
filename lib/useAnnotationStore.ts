@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 
 export interface BoundingBox {
@@ -21,30 +20,30 @@ interface AnnotationState {
   imageUrl: string;
   loadedImage: HTMLImageElement | null;
   isImageLoading: boolean;
-  
+
   // Canvas state
   zoomLevel: number;
   panOffset: { x: number; y: number };
-  
+
   // Bounding boxes
   boundingBoxes: BoundingBox[];
   selectedBoxId: string | null;
-  
+
   // History for undo/redo
   history: HistoryEntry[];
   historyIndex: number;
-  
+
   // Interaction state
   isCreatingBox: boolean;
   isDragging: boolean;
   isResizing: boolean;
   dragStart: { x: number; y: number } | null;
   previewBox: { x: number; y: number; width: number; height: number } | null;
-  
+
   // Modal state
   showEditModal: boolean;
   editingBoxId: string | null;
-  
+
   // Actions
   setImageUrl: (url: string) => void;
   loadImage: (url: string) => Promise<void>;
@@ -53,24 +52,25 @@ interface AnnotationState {
   zoomOut: () => void;
   resetView: () => void;
   setPanOffset: (offset: { x: number; y: number }) => void;
-  
+
   // Bounding box actions
   addBoundingBox: (box: Omit<BoundingBox, 'id'>) => void;
   updateBoundingBox: (id: string, updates: Partial<BoundingBox>) => void;
   deleteBoundingBox: (id: string) => void;
   selectBoundingBox: (id: string | null) => void;
-  
+
   // Modal actions
   openEditModal: (boxId: string) => void;
   closeEditModal: () => void;
-  
+  clearBoundingBoxes: () => void;
+
   // Interaction actions
   setIsCreatingBox: (creating: boolean) => void;
   setIsDragging: (dragging: boolean) => void;
   setIsResizing: (resizing: boolean) => void;
   setDragStart: (start: { x: number; y: number } | null) => void;
   setPreviewBox: (box: { x: number; y: number; width: number; height: number } | null) => void;
-  
+
   // History actions
   undo: () => void;
   redo: () => void;
@@ -108,23 +108,23 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
   previewBox: null,
   showEditModal: false,
   editingBoxId: null,
-  
+
   // Actions
   setImageUrl: (url) => set({ imageUrl: url }),
-  
+
   loadImage: async (url) => {
     set({ isImageLoading: true, imageUrl: url });
-    
+
     try {
       const img = new Image();
       img.crossOrigin = 'anonymous';
-      
+
       await new Promise((resolve, reject) => {
         img.onload = resolve;
         img.onerror = reject;
         img.src = url;
       });
-      
+
       set({ 
         loadedImage: img, 
         isImageLoading: false,
@@ -141,23 +141,23 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
       set({ isImageLoading: false, loadedImage: null });
     }
   },
-  
+
   setZoomLevel: (level) => set({ zoomLevel: Math.max(0.1, Math.min(5, level)) }),
-  
+
   zoomIn: () => {
     const { zoomLevel } = get();
     set({ zoomLevel: Math.min(zoomLevel * 1.2, 5) });
   },
-  
+
   zoomOut: () => {
     const { zoomLevel } = get();
     set({ zoomLevel: Math.max(zoomLevel / 1.2, 0.1) });
   },
-  
+
   resetView: () => set({ zoomLevel: 1, panOffset: { x: 0, y: 0 } }),
-  
+
   setPanOffset: (offset) => set({ panOffset: offset }),
-  
+
   addBoundingBox: (box) => {
     const { boundingBoxes, addToHistory } = get();
     const id = Date.now().toString();
@@ -174,7 +174,7 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     });
     addToHistory();
   },
-  
+
   updateBoundingBox: (id, updates) => {
     const { boundingBoxes, addToHistory } = get();
     set({
@@ -184,7 +184,7 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     });
     addToHistory();
   },
-  
+
   deleteBoundingBox: (id) => {
     const { boundingBoxes, selectedBoxId, addToHistory } = get();
     set({
@@ -193,23 +193,27 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     });
     addToHistory();
   },
-  
+
   selectBoundingBox: (id) => set({ selectedBoxId: id }),
-  
+
   openEditModal: (boxId) => set({ showEditModal: true, editingBoxId: boxId }),
-  
+
   closeEditModal: () => set({ showEditModal: false, editingBoxId: null }),
-  
+
+  clearBoundingBoxes: () => {
+    set({ boundingBoxes: [], selectedBoxId: null });
+  },
+
   setIsCreatingBox: (creating) => set({ isCreatingBox: creating }),
-  
+
   setIsDragging: (dragging) => set({ isDragging: dragging }),
-  
+
   setIsResizing: (resizing) => set({ isResizing: resizing }),
-  
+
   setDragStart: (start) => set({ dragStart: start }),
-  
+
   setPreviewBox: (box) => set({ previewBox: box }),
-  
+
   // History actions
   addToHistory: () => {
     const { boundingBoxes, selectedBoxId, history, historyIndex } = get();
@@ -225,7 +229,7 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
       historyIndex: newHistory.length - 1 
     });
   },
-  
+
   undo: () => {
     const { history, historyIndex } = get();
     if (historyIndex > 0) {
@@ -238,7 +242,7 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
       });
     }
   },
-  
+
   redo: () => {
     const { history, historyIndex } = get();
     if (historyIndex < history.length - 1) {
@@ -251,12 +255,12 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
       });
     }
   },
-  
+
   canUndo: () => {
     const { historyIndex } = get();
     return historyIndex > 0;
   },
-  
+
   canRedo: () => {
     const { history, historyIndex } = get();
     return historyIndex < history.length - 1;
