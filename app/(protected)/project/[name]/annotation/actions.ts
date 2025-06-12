@@ -52,8 +52,8 @@ export async function submitAnnotations(
     const { error: updateError } = await supabase
       .from("task")
       .update({ 
-        status: "completed",
-        updated_at: new Date().toISOString()
+        status: "submited",
+        submited_at: new Date().toISOString()
       })
       .eq("id", taskId);
 
