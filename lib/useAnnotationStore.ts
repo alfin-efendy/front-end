@@ -160,7 +160,8 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
 
   addBoundingBox: (box) => {
     const { boundingBoxes, addToHistory } = get();
-    const id = Date.now().toString();
+    // Generate a unique ID using timestamp + random number to prevent duplicates
+    const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const colorIndex = boundingBoxes.length % COLORS.length;
     const newBox: BoundingBox = {
       ...box,
