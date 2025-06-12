@@ -198,16 +198,8 @@ export default function AnnotationPage() {
               </div>
             </ResizablePanel>
 
-            <ResizableHandle withHandle />
-
             {/* Collapsible Annotation List at Bottom */}
-            <ResizablePanel 
-              defaultSize={15} 
-              minSize={5}
-              maxSize={40}
-              className={isAnnotationListCollapsed ? "h-auto" : ""}
-            >
-              <div className="bg-white border-t border-gray-200 h-full flex flex-col">
+            <div className={`bg-white border-t border-gray-200 flex flex-col ${isAnnotationListCollapsed ? 'h-auto' : 'h-64'}`}>
                 {/* Header with collapse button */}
                 <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50">
                   <h3 className="text-lg font-semibold">
@@ -290,7 +282,7 @@ export default function AnnotationPage() {
                   </div>
                 )}
               </div>
-            </ResizablePanel>
+            </div>
           </ResizablePanelGroup>
         </ResizablePanel>
 
