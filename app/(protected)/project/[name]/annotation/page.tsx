@@ -7,7 +7,7 @@ import { CanvasContainer } from '@/components/CanvasContainer';
 import { Sidebar } from '@/components/Sidebar';
 import { EditBoxModal } from '@/components/EditBoxModal';
 import { Toolbar, ToolType } from '@/components/toolbar';
-import { getAnnotation } from "./actions";
+import { getAnnotation, submitAnnotations } from "./actions";
 import { useEffect, useState } from "react";
 import { useSearchParams } from 'next/navigation';
 import {
@@ -46,6 +46,7 @@ export default function AnnotationPage() {
   const [isAnnotationListCollapsed, setIsAnnotationListCollapsed] = useState(false);
   const [isSpacePressed, setIsSpacePressed] = useState(false);
   const [previousTool, setPreviousTool] = useState<ToolType>("select");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const searchParams = useSearchParams();
 
   // Load initial data
@@ -89,6 +90,49 @@ export default function AnnotationPage() {
     url.searchParams.set('task', taskId);
     window.history.pushState({}, '', url.toString());
     loadImage(urlFile);
+  };
+
+  const handleSubmit = async () => {
+    const taskId = searchParams.get('task');
+    if (!taskId) {
+      alert('No task selected');
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      // Convert bounding boxes to annotation format
+      const annotationsToSubmit = boundingBoxes.map((box) => {
+        // Find matching label by name
+        const matchingLabel = data?.labels?.find((label: any) => label.name === box.label);
+        
+        return {
+          x: Math.round(box.x),
+          y: Math.round(box.y),
+          width: Math.round(box.width),
+          height: Math.round(box.height),
+          labelId: matchingLabel?.id || null,
+        };
+      });
+
+      const result = await submitAnnotations(Number(taskId), annotationsToSubmit);
+      
+      if (result.error) {
+        alert(`Error submitting annotations: ${result.error}`);
+      } else {
+        alert('Annotations submitted successfully!');
+        // Refresh the page data to show updated task status
+        const updatedData = await getAnnotation(Number(taskId));
+        if (updatedData.data) {
+          setData(updatedData.data);
+        }
+      }
+    } catch (error) {
+      alert(`Error submitting annotations: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Global keyboard shortcuts
@@ -208,6 +252,8 @@ export default function AnnotationPage() {
                   onRedo={handleRedo}
                   canUndo={canUndo()}
                   canRedo={canRedo()}
+                  onSubmit={handleSubmit}
+                  isSubmitting={isSubmitting}
                   className="w-auto flex-shrink-0"
                 />
 

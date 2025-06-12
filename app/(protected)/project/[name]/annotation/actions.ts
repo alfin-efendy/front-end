@@ -5,6 +5,72 @@ import { LabelInput } from "@/types/label";
 import { Task } from "@/types/task";
 import { headers } from "next/headers";
 
+export async function submitAnnotations(
+  taskId: number,
+  annotations: any[]
+): Promise<{ success?: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  try {
+    // Delete existing annotations for this task
+    const { error: deleteError } = await supabase
+      .from("annotation")
+      .delete()
+      .eq("task_id", taskId);
+
+    if (deleteError) {
+      return {
+        error: `Error deleting existing annotations: ${deleteError.message}`,
+      };
+    }
+
+    // Insert new annotations if any exist
+    if (annotations.length > 0) {
+      const annotationsToInsert = annotations.map((annotation) => ({
+        task_id: taskId,
+        label_id: annotation.labelId || null,
+        x: annotation.x,
+        y: annotation.y,
+        width: annotation.width,
+        height: annotation.height,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }));
+
+      const { error: insertError } = await supabase
+        .from("annotation")
+        .insert(annotationsToInsert);
+
+      if (insertError) {
+        return {
+          error: `Error inserting annotations: ${insertError.message}`,
+        };
+      }
+    }
+
+    // Update task status to completed
+    const { error: updateError } = await supabase
+      .from("task")
+      .update({ 
+        status: "completed",
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", taskId);
+
+    if (updateError) {
+      return {
+        error: `Error updating task status: ${updateError.message}`,
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    return {
+      error: `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    };
+  }
+}
+
 export async function getAnnotation(
   taskId: number
 ): Promise<{ data?: InitialAnnotationData; error?: string }> {

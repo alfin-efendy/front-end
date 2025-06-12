@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { Input } from "@/components/ui/input"
 import {
   MousePointer,
   Hand,
@@ -33,6 +34,8 @@ interface ToolbarProps {
   onRedo: () => void
   canUndo: boolean
   canRedo: boolean
+  onSubmit?: () => void;
+  isSubmitting?: boolean;
   onShowHelp?: () => void
   className?: string;
 }
@@ -46,6 +49,8 @@ export function Toolbar({
   onRedo,
   canUndo,
   canRedo,
+  onSubmit,
+  isSubmitting = false,
   onShowHelp,
   className,
 }: ToolbarProps) {
@@ -179,6 +184,20 @@ export function Toolbar({
           )}
         </div>
         <Separator orientation="vertical" className="h-8" />
+
+      {/* Submit Button */}
+      {onSubmit && (
+        <>
+          <Separator orientation="vertical" className="h-8" />
+          <Button
+            onClick={onSubmit}
+            disabled={isSubmitting}
+            className="bg-green-600 hover:bg-green-700 text-white"
+          >
+            {isSubmitting ? 'Submitting...' : 'Submit Annotations'}
+          </Button>
+        </>
+      )}
       </div>
     </TooltipProvider>
   )
