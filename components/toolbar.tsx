@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import {
   MousePointer,
   Hand,
@@ -19,24 +19,28 @@ import {
   Upload,
   FileImage,
   HelpCircle,
-} from "lucide-react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { cn } from "@/lib/utils"
+} from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
-export type ToolType = "select" | "pan"
+export type ToolType = "select" | "pan";
 
 interface ToolbarProps {
-  selectedTool: ToolType
-  onToolChange: (tool: ToolType) => void
-  zoomLevel: number
-  onZoomChange: (zoom: number) => void
-  onUndo: () => void
-  onRedo: () => void
-  canUndo: boolean
-  canRedo: boolean
-  onSubmit?: () => void;
+  selectedTool: ToolType;
+  onToolChange: (tool: ToolType) => void;
+  zoomLevel: number;
+  onZoomChange: (zoom: number) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
   isSubmitting?: boolean;
-  onShowHelp?: () => void
+  onShowHelp?: () => void;
   className?: string;
 }
 
@@ -49,7 +53,6 @@ export function Toolbar({
   onRedo,
   canUndo,
   canRedo,
-  onSubmit,
   isSubmitting = false,
   onShowHelp,
   className,
@@ -68,30 +71,35 @@ export function Toolbar({
       icon: <Hand className="h-4 w-4" />,
       tooltip: "Pan around the document (P)",
     },
-  ]
+  ];
 
   // Handle zoom in
   const handleZoomIn = () => {
     // Use 5% increment for zoom in
-    const newZoom = Math.min(zoomLevel + 0.05, 5)
-    onZoomChange(newZoom)
-  }
+    const newZoom = Math.min(zoomLevel + 0.05, 5);
+    onZoomChange(newZoom);
+  };
 
   // Handle zoom out
   const handleZoomOut = () => {
     // Use 5% decrement for zoom out
-    const newZoom = Math.max(zoomLevel - 0.05, 0.1)
-    onZoomChange(newZoom)
-  }
+    const newZoom = Math.max(zoomLevel - 0.05, 0.1);
+    onZoomChange(newZoom);
+  };
 
   // Handle zoom reset
   const handleZoomReset = () => {
-    onZoomChange(1)
-  }
+    onZoomChange(1);
+  };
 
   return (
     <TooltipProvider>
-      <div className={cn("bg-background border-b p-2 flex flex-wrap items-center gap-2", className)}>
+      <div
+        className={cn(
+          "bg-background border-b p-2 flex flex-wrap items-center gap-2",
+          className
+        )}
+      >
         {/* Tool buttons */}
         <div className="flex items-center space-x-1">
           {tools.map((tool) => (
@@ -117,18 +125,30 @@ export function Toolbar({
         <div className="flex items-center space-x-1">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="icon" onClick={handleZoomOut} aria-label="Zoom Out">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleZoomOut}
+                aria-label="Zoom Out"
+              >
                 <ZoomOut className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Zoom Out (-)</TooltipContent>
           </Tooltip>
 
-          <div className="text-sm font-medium w-16 text-center">{Math.round(zoomLevel * 100)}%</div>
+          <div className="text-sm font-medium w-16 text-center">
+            {Math.round(zoomLevel * 100)}%
+          </div>
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="icon" onClick={handleZoomIn} aria-label="Zoom In">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleZoomIn}
+                aria-label="Zoom In"
+              >
                 <ZoomIn className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
@@ -137,7 +157,12 @@ export function Toolbar({
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="icon" onClick={handleZoomReset} aria-label="Reset Zoom">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleZoomReset}
+                aria-label="Reset Zoom"
+              >
                 <RotateCcw className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
@@ -151,7 +176,13 @@ export function Toolbar({
         <div className="flex items-center space-x-1">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="icon" onClick={onUndo} disabled={!canUndo} aria-label="Undo">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={onUndo}
+                disabled={!canUndo}
+                aria-label="Undo"
+              >
                 <Undo className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
@@ -160,7 +191,13 @@ export function Toolbar({
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="icon" onClick={onRedo} disabled={!canRedo} aria-label="Redo">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={onRedo}
+                disabled={!canRedo}
+                aria-label="Redo"
+              >
                 <Redo className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
@@ -171,34 +208,24 @@ export function Toolbar({
         <Separator orientation="vertical" className="h-8" />
 
         {/* Document and Help */}
-        <div className="flex items-center space-x-1">
-          {onShowHelp && (
+        {onShowHelp && (
+          <div className="flex items-center space-x-1">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" onClick={onShowHelp} aria-label="Help">
+                <Button
+                  variant="outline"
+                  onClick={onShowHelp}
+                  aria-label="Help"
+                >
                   <HelpCircle className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Show Help</TooltipContent>
             </Tooltip>
-          )}
-        </div>
-        <Separator orientation="vertical" className="h-8" />
-
-      {/* Submit Button */}
-      {onSubmit && (
-        <>
-          <Separator orientation="vertical" className="h-8" />
-          <Button
-            onClick={onSubmit}
-            disabled={isSubmitting}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            {isSubmitting ? 'Submitting...' : 'Submit Annotations'}
-          </Button>
-        </>
-      )}
+            <Separator orientation="vertical" className="h-8" />
+          </div>
+        )}
       </div>
     </TooltipProvider>
-  )
+  );
 }

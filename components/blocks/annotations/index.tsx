@@ -24,7 +24,6 @@ import { Task } from "@/types/task";
 import { Separator } from "@/components/ui/separator";
 import { useRouter, useSearchParams } from "next/navigation";
 import { color } from "framer-motion";
-import { cn } from "@/lib/utils";
 import { useImageLoader } from "@/hooks/useImageLoader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnnotationOverlay } from "@/components/annotation-overlay";

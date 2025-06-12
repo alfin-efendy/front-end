@@ -2,6 +2,7 @@
 import React, { useCallback, useRef } from 'react';
 import { useAnnotationStore } from '@/lib/useAnnotationStore';
 import type { BoundingBox as BoundingBoxType } from '@/lib/useAnnotationStore';
+import { cn } from "@/lib/utils";
 
 interface BoundingBoxProps {
   box: BoundingBoxType;
@@ -207,11 +208,15 @@ export function BoundingBox({ box, zoomLevel }: BoundingBoxProps) {
       <div
         className={`
           w-full h-full border-2 cursor-move transition-all
-          ${isSelected ? 'border-blue-500' : 'border-gray-400'}
-          ${isSelected ? 'bg-blue-500 bg-opacity-10' : 'bg-transparent'}
+          ${isSelected ? box.color ? `bg-[${box.color}] bg-opacity-10` : 'bg-blue-500 bg-opacity-10' : 'bg-transparent'}
           ${isDragOver ? 'bg-green-500 bg-opacity-20 border-green-500' : ''}
         `}
-        style={{ borderColor: isDragOver ? '#10B981' : (box.color || '#6B7280') }}
+        style={
+          {
+            borderColor: isDragOver ? '#10B981' : (box.color || '#6B7280'),
+            backgroundColor: isSelected ? (box.color ? `${box.color}1A` : '#3B82F61A') : 'transparent',
+          }
+        }
         onMouseDown={handleMouseDown}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -221,19 +226,9 @@ export function BoundingBox({ box, zoomLevel }: BoundingBoxProps) {
         {box.label && (
           <div
             className="absolute -top-6 left-0 px-1 py-0.5 text-xs text-white rounded"
-            style={{ backgroundColor: box.color || '#6B7280', fontSize: `${Math.max(10, 12 / zoomLevel)}px` }}
+            style={{ backgroundColor: box.color || '#6B7280', fontSize: `${Math.max(16, 2 / zoomLevel)}px` }}
           >
             {box.label}
-          </div>
-        )}
-        
-        {/* No label indicator */}
-        {!box.label && (
-          <div
-            className="absolute -top-6 left-0 px-1 py-0.5 text-xs bg-gray-500 text-white rounded opacity-70"
-            style={{ fontSize: `${Math.max(10, 12 / zoomLevel)}px` }}
-          >
-            No Label
           </div>
         )}
       </div>
@@ -244,10 +239,13 @@ export function BoundingBox({ box, zoomLevel }: BoundingBoxProps) {
           {resizeHandles.map(({ direction, cursor, className }) => (
             <div
               key={direction}
-              className={`absolute w-2 h-2 bg-blue-500 border border-white cursor-${cursor} ${className}`}
-              style={{ 
-                width: `${Math.max(6, 2 / zoomLevel)}px`, 
-                height: `${Math.max(6, 2 / zoomLevel)}px` 
+              className={cn(
+                `absolute rounded-full w-2 h-2 border-2 bg-white cursor-${cursor} ${className}`,
+              )}
+              style={{
+                width: `${Math.max(12, 2 / zoomLevel)}px`,
+                height: `${Math.max(12, 2 / zoomLevel)}px`,
+                borderColor: box.color || '#10B981',
               }}
               onMouseDown={(e) => handleResizeMouseDown(e, direction)}
             />

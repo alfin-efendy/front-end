@@ -208,7 +208,7 @@ export function CanvasContainer({ selectedTool = 'select' }: CanvasContainerProp
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-full overflow-hidden bg-gray-100"
+      className="relative w-full h-full overflow-hidden bg-primary-foreground"
       style={{ cursor: getCursor() }}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
