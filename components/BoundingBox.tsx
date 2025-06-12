@@ -183,7 +183,7 @@ export function BoundingBox({ box, zoomLevel }: BoundingBoxProps) {
         {/* Label */}
         <div
           className="absolute -top-6 left-0 px-1 py-0.5 text-xs text-white rounded"
-          style={{ backgroundColor: box.color, fontSize: `${Math.max(10, 12 / zoomLevel)}px` }}
+          style={{ backgroundColor: box.color, fontSize: `${Math.max(10, 2 / zoomLevel)}px` }}
         >
           {box.label}
         </div>
@@ -197,8 +197,8 @@ export function BoundingBox({ box, zoomLevel }: BoundingBoxProps) {
               key={direction}
               className={`absolute w-2 h-2 bg-blue-500 border border-white cursor-${cursor} ${className}`}
               style={{ 
-                width: `${Math.max(6, 8 / zoomLevel)}px`, 
-                height: `${Math.max(6, 8 / zoomLevel)}px` 
+                width: `${Math.max(6, 2 / zoomLevel)}px`, 
+                height: `${Math.max(6, 2 / zoomLevel)}px` 
               }}
               onMouseDown={(e) => handleResizeMouseDown(e, direction)}
             />
