@@ -47,6 +47,7 @@ interface AnnotationState {
   // Actions
   setImageUrl: (url: string) => void;
   loadImage: (url: string) => Promise<void>;
+  loadImageOnly: (url: string) => Promise<void>;
   setZoomLevel: (level: number) => void;
   zoomIn: () => void;
   zoomOut: () => void;
@@ -135,6 +136,29 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
         panOffset: { x: 0, y: 0 },
         history: [{ boundingBoxes: [], selectedBoxId: null }],
         historyIndex: 0
+      });
+    } catch (error) {
+      console.error('Failed to load image:', error);
+      set({ isImageLoading: false, loadedImage: null });
+    }
+  },
+
+  loadImageOnly: async (url) => {
+    set({ isImageLoading: true, imageUrl: url });
+
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = url;
+      });
+
+      set({ 
+        loadedImage: img, 
+        isImageLoading: false
       });
     } catch (error) {
       console.error('Failed to load image:', error);

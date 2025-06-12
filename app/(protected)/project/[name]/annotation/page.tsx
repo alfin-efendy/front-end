@@ -27,6 +27,7 @@ export default function AnnotationPage() {
     boundingBoxes,
     setImageUrl,
     loadImage,
+    loadImageOnly,
     zoomIn,
     zoomOut,
     resetView,
@@ -58,16 +59,12 @@ export default function AnnotationPage() {
           setError(error);
         } else if (data) {
           setData(data);
-          // Load the image from the data
-          if (data.urlFile) {
-            loadImage(data.urlFile);
-          }
+          
+          // Clear existing bounding boxes first
+          useAnnotationStore.getState().clearBoundingBoxes();
           
           // Load existing annotations from database into the store
           if (data.annotations && data.annotations.length > 0) {
-            // Clear existing bounding boxes first
-            useAnnotationStore.getState().clearBoundingBoxes();
-            
             // Convert database annotations to bounding box format
             data.annotations.forEach((annotation: any) => {
               const label = data.labels?.find(l => l.id === annotation.label_id);
@@ -80,9 +77,11 @@ export default function AnnotationPage() {
                 color: label?.color || '#3b82f6'
               });
             });
-          } else {
-            // Clear existing bounding boxes if no annotations
-            useAnnotationStore.getState().clearBoundingBoxes();
+          }
+          
+          // Load the image from the data after setting up annotations
+          if (data.urlFile) {
+            loadImageOnly(data.urlFile);
           }
         }
       });
@@ -111,16 +110,15 @@ export default function AnnotationPage() {
     const url = new URL(window.location.href);
     url.searchParams.set('task', taskId);
     window.history.pushState({}, '', url.toString());
-    loadImage(urlFile);
     
     // Load annotations for the new task
     getAnnotation(Number(taskId)).then(({ data, error }) => {
       if (!error && data) {
+        // Clear existing bounding boxes first
+        useAnnotationStore.getState().clearBoundingBoxes();
+        
         // Load existing annotations from database into the store
         if (data.annotations && data.annotations.length > 0) {
-          // Clear existing bounding boxes first
-          useAnnotationStore.getState().clearBoundingBoxes();
-          
           // Convert database annotations to bounding box format
           data.annotations.forEach((annotation: any) => {
             const label = data.labels?.find(l => l.id === annotation.label_id);
@@ -133,10 +131,10 @@ export default function AnnotationPage() {
               color: label?.color || '#3b82f6'
             });
           });
-        } else {
-          // Clear existing bounding boxes if no annotations
-          useAnnotationStore.getState().clearBoundingBoxes();
         }
+        
+        // Load the image after setting up annotations
+        loadImageOnly(urlFile);
         setData(data);
       }
     });
