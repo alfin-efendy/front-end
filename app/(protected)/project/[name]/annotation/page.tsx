@@ -282,7 +282,6 @@ export default function AnnotationPage() {
                   </div>
                 )}
               </div>
-            </div>
           </ResizablePanelGroup>
         </ResizablePanel>
 
