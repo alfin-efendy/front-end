@@ -1,0 +1,21 @@
+Error: Encountered two children with the same key, `1749713867699`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+    at createUnhandledError (https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_client_e91d48._.js:689:49)
+    at handleClientError (https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_client_e91d48._.js:856:56)
+    at console.error (https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_client_e91d48._.js:991:56)
+    at https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_compiled_react-dom_1d5be4._.js:4184:33
+    at runWithFiberInDEV (https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_compiled_react-dom_1d5be4._.js:631:20)
+    at warnOnInvalidKey (https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_compiled_react-dom_1d5be4._.js:4183:21)
+    at reconcileChildrenArray (https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_compiled_react-dom_1d5be4._.js:4209:160)
+    at reconcileChildFibersImpl (https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_compiled_react-dom_1d5be4._.js:4315:117)
+    at https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_compiled_react-dom_1d5be4._.js:4342:39
+    at reconcileChildren (https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_compiled_react-dom_1d5be4._.js:4627:119)
+    at beginWork (https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_compiled_react-dom_1d5be4._.js:5413:1573)
+    at runWithFiberInDEV (https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_compiled_react-dom_1d5be4._.js:631:20)
+    at performUnitOfWork (https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_compiled_react-dom_1d5be4._.js:7955:97)
+    at workLoopSync (https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_compiled_react-dom_1d5be4._.js:7847:40)
+    at renderRootSync (https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_compiled_react-dom_1d5be4._.js:7830:13)
+    at performWorkOnRoot (https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_compiled_react-dom_1d5be4._.js:7565:211)
+    at performSyncWorkOnRoot (https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_compiled_react-dom_1d5be4._.js:8402:9)
+    at flushSyncWorkAcrossRoots_impl (https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_compiled_react-dom_1d5be4._.js:8326:245)
+    at processRootScheduleInMicrotask (https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_compiled_react-dom_1d5be4._.js:8343:9)
+    at https://c0d8bd41-4bb4-48a1-ad62-1be48110dfc8-00-r4ukb1e5myib.pike.replit.dev/_next/static/chunks/1d562_next_dist_compiled_react-dom_1d5be4._.js:8413:126
