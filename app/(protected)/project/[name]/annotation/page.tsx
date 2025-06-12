@@ -44,6 +44,8 @@ export default function AnnotationPage() {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [isAnnotationListCollapsed, setIsAnnotationListCollapsed] = useState(false);
+  const [isSpacePressed, setIsSpacePressed] = useState(false);
+  const [previousTool, setPreviousTool] = useState<ToolType>("select");
   const searchParams = useSearchParams();
 
   // Load initial data
@@ -91,22 +93,45 @@ export default function AnnotationPage() {
 
   // Global keyboard shortcuts
   React.useEffect(() => {
-    const handleKeyboardShortcuts = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if the active element is an input, textarea, or select element
+      const activeElement = document.activeElement;
+      const isInputFocused =
+        activeElement instanceof HTMLInputElement ||
+        activeElement instanceof HTMLTextAreaElement ||
+        activeElement instanceof HTMLSelectElement;
+
+      // Handle space key for pan tool - prevent default BEFORE any other logic
+      if (!isInputFocused && e.code === 'Space') {
+        e.preventDefault(); // Prevent page scrolling
+
+        // Only switch tool if not already pressed
+        if (!isSpacePressed) {
+          setIsSpacePressed(true);
+          // Store current tool before switching to pan
+          setPreviousTool(selectedTool);
+          setSelectedTool('pan');
+        }
+        return;
+      }
+
       // Delete key for removing selected box
       if (e.key === 'Delete' && selectedBoxId) {
         deleteBoundingBox(selectedBoxId);
         selectBoundingBox(null);
       }
 
-      // Tool shortcuts
-      if (e.key === 's' || e.key === 'S') {
-        e.preventDefault();
-        setSelectedTool('select');
-      }
+      // Tool shortcuts (only when not focused on input)
+      if (!isInputFocused) {
+        if (e.key === 's' || e.key === 'S') {
+          e.preventDefault();
+          setSelectedTool('select');
+        }
 
-      if (e.key === 'p' || e.key === 'P') {
-        e.preventDefault();
-        setSelectedTool('pan');
+        if (e.key === 'p' || e.key === 'P') {
+          e.preventDefault();
+          setSelectedTool('pan');
+        }
       }
 
       // Shortcuts with Ctrl/Cmd
@@ -134,9 +159,26 @@ export default function AnnotationPage() {
       }
     };
 
-    document.addEventListener('keydown', handleKeyboardShortcuts);
-    return () => document.removeEventListener('keydown', handleKeyboardShortcuts);
-  }, [selectedBoxId, deleteBoundingBox, selectBoundingBox, zoomIn, zoomOut, resetView, undo, redo]);
+    const handleKeyUp = (e: KeyboardEvent) => {
+      // Handle space key release
+      if (e.code === 'Space') {
+        e.preventDefault(); // Prevent any default behavior
+
+        if (isSpacePressed) {
+          setIsSpacePressed(false);
+          // Restore previous tool
+          setSelectedTool(previousTool);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [selectedBoxId, deleteBoundingBox, selectBoundingBox, zoomIn, zoomOut, resetView, undo, redo, selectedTool, isSpacePressed, previousTool]);
 
   if (error) {
     return (
@@ -147,16 +189,16 @@ export default function AnnotationPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen overflow-hidden">
       <ResizablePanelGroup
-        className="flex flex-row"
+        className="flex flex-row h-full"
         direction="horizontal"
       >
         <ResizablePanel defaultSize={85}>
           <ResizablePanelGroup direction="vertical" className="flex flex-col">
-            <ResizablePanel defaultSize={85} className="flex flex-col">
+            <ResizablePanel defaultSize={85} className="flex flex-col min-h-0">
               {/* Toolbar */}
-              <div className="flex flex-row border-b">
+              <div className="flex flex-row border-b flex-shrink-0">
                 <Toolbar
                   selectedTool={selectedTool}
                   onToolChange={handleToolChange}
@@ -191,15 +233,15 @@ export default function AnnotationPage() {
               </div>
 
               {/* Canvas Area */}
-              <div className="flex-1 overflow-hidden">
-                <div className="h-full relative">
+              <div className="flex-1 overflow-hidden min-h-0">
+                <div className="h-full w-full relative">
                   <CanvasContainer selectedTool={selectedTool} />
                 </div>
               </div>
             </ResizablePanel>
 
             {/* Collapsible Annotation List at Bottom */}
-            <div className={`bg-white border-t border-gray-200 flex flex-col ${isAnnotationListCollapsed ? 'h-auto' : 'h-64'}`}>
+            <div className={`bg-white border-t border-gray-200 flex flex-col flex-shrink-0 ${isAnnotationListCollapsed ? 'h-auto' : 'h-64'}`}>
                 {/* Header with collapse button */}
                 <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50">
                   <h3 className="text-lg font-semibold">

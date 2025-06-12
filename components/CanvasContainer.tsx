@@ -135,6 +135,7 @@ export function CanvasContainer({ selectedTool = 'select' }: CanvasContainerProp
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
+      e.stopPropagation();
       if (e.deltaY < 0) {
         zoomIn();
       } else {
@@ -142,6 +143,22 @@ export function CanvasContainer({ selectedTool = 'select' }: CanvasContainerProp
       }
     }
   }, [zoomIn, zoomOut]);
+
+  // Prevent browser zoom on Ctrl+wheel globally
+  React.useEffect(() => {
+    const preventBrowserZoom = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+      }
+    };
+
+    // Add the event listener to the document
+    document.addEventListener('wheel', preventBrowserZoom, { passive: false });
+
+    return () => {
+      document.removeEventListener('wheel', preventBrowserZoom);
+    };
+  }, []);
 
   // Update cursor based on tool
   const getCursor = () => {
