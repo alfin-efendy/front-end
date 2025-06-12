@@ -382,16 +382,17 @@ export function useCanvas({
       }
 
       // Handle drawing new annotation
-      if (isDrawing && currentAnnotation) {
-        setCurrentAnnotation((prev) => {
-          if (!prev) return null
-          return {
-            ...prev,
-            width: x - (prev.x || 0),
-            height: y - (prev.y || 0),
-          }
-        })
-      }, 16) // ~60fps throttling
+        if (isDrawing && currentAnnotation) {
+          setCurrentAnnotation((prev) => {
+            if (!prev) return null
+            return {
+              ...prev,
+              width: x - (prev.x || 0),
+              height: y - (prev.y || 0),
+            }
+          })
+        }
+      }, 16) 
     },
     [
       annotations,
@@ -490,7 +491,7 @@ export function useCanvas({
       // Important: Set the actual canvas dimensions
       canvas.width = containerWidth
       canvas.height = containerWidth * aspectRatio
-      
+
       // Update canvas size state
       const newSize = {
         width: canvas.width,
