@@ -355,9 +355,6 @@ export function useCanvas({
               })
             }
           }
-
-          // Redraw immediately to prevent flickering
-          renderCanvas()
           return
         }
       }
@@ -370,9 +367,6 @@ export function useCanvas({
             x: x - dragOffset.x,
             y: y - dragOffset.y,
           })
-
-          // Redraw immediately to prevent flickering
-          renderCanvas()
           return
         }
       }
@@ -387,9 +381,6 @@ export function useCanvas({
             height: y - (prev.y || 0),
           }
         })
-
-        // Redraw immediately to prevent flickering
-        renderCanvas()
       }
     },
     [
@@ -534,16 +525,12 @@ export function useCanvas({
     }
   }, [image, imageRef, renderCanvas])
 
-  // Update canvas when annotations change
+  // Update canvas when image changes
   useEffect(() => {
     if (image && canvasRef.current) {
-      // Use requestAnimationFrame to prevent potential render loops
-      const animationId = requestAnimationFrame(() => {
-        renderCanvas()
-      })
-      return () => cancelAnimationFrame(animationId)
+      renderCanvas()
     }
-  }, [image, renderCanvas, annotations, selectedAnnotation]) // Added dependencies
+  }, [image, renderCanvas])
 
   // Initialize canvas when image is loaded
   useEffect(() => {

@@ -30,12 +30,12 @@ export function AnnotationBox({
   const hasLabel = annotation.labelName && annotation.labelName.trim() !== "";
   const isLocked = annotation.locked;
 
-  // Calculate position and size
+  // Calculate position and size with proper rounding to prevent sub-pixel rendering
   const style = {
-    left: `${annotation.x}px`,
-    top: `${annotation.y}px`,
-    width: `${annotation.width}px`,
-    height: `${annotation.height}px`,
+    left: `${Math.round(annotation.x)}px`,
+    top: `${Math.round(annotation.y)}px`,
+    width: `${Math.round(annotation.width)}px`,
+    height: `${Math.round(annotation.height)}px`,
   };
 
   // Determine colors based on state
