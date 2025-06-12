@@ -29,6 +29,10 @@ export default function AnnotationPage() {
     deleteBoundingBox,
     selectBoundingBox,
     setZoomLevel,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   } = useAnnotationStore();
 
   const [selectedTool, setSelectedTool] = useState<ToolType>("select");
@@ -65,13 +69,11 @@ export default function AnnotationPage() {
   };
 
   const handleUndo = () => {
-    // Implement undo functionality if needed
-    console.log('Undo action');
+    undo();
   };
 
   const handleRedo = () => {
-    // Implement redo functionality if needed
-    console.log('Redo action');
+    redo();
   };
 
   // Global keyboard shortcuts
@@ -94,9 +96,19 @@ export default function AnnotationPage() {
         setSelectedTool('pan');
       }
 
-      // Zoom shortcuts
+      // Shortcuts with Ctrl/Cmd
       if (e.ctrlKey || e.metaKey) {
-        if (e.key === '=' || e.key === '+') {
+        if (e.key === 'z' || e.key === 'Z') {
+          e.preventDefault();
+          if (e.shiftKey) {
+            redo(); // Ctrl+Shift+Z for redo
+          } else {
+            undo(); // Ctrl+Z for undo
+          }
+        } else if (e.key === 'y' || e.key === 'Y') {
+          e.preventDefault();
+          redo(); // Ctrl+Y for redo
+        } else if (e.key === '=' || e.key === '+') {
           e.preventDefault();
           zoomIn();
         } else if (e.key === '-') {
@@ -111,7 +123,7 @@ export default function AnnotationPage() {
 
     document.addEventListener('keydown', handleKeyboardShortcuts);
     return () => document.removeEventListener('keydown', handleKeyboardShortcuts);
-  }, [selectedBoxId, deleteBoundingBox, selectBoundingBox, zoomIn, zoomOut, resetView]);
+  }, [selectedBoxId, deleteBoundingBox, selectBoundingBox, zoomIn, zoomOut, resetView, undo, redo]);
 
   if (error) {
     return (
@@ -137,8 +149,8 @@ export default function AnnotationPage() {
               onZoomChange={handleZoomChange}
               onUndo={handleUndo}
               onRedo={handleRedo}
-              canUndo={false} // Set to true when undo functionality is implemented
-              canRedo={false} // Set to true when redo functionality is implemented
+              canUndo={canUndo()}
+              canRedo={canRedo()}
               className="w-auto flex-shrink-0"
             />
 

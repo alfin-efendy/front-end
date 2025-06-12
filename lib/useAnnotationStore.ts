@@ -11,6 +11,11 @@ export interface BoundingBox {
   color: string;
 }
 
+interface HistoryEntry {
+  boundingBoxes: BoundingBox[];
+  selectedBoxId: string | null;
+}
+
 interface AnnotationState {
   // Image state
   imageUrl: string;
@@ -24,6 +29,10 @@ interface AnnotationState {
   // Bounding boxes
   boundingBoxes: BoundingBox[];
   selectedBoxId: string | null;
+  
+  // History for undo/redo
+  history: HistoryEntry[];
+  historyIndex: number;
   
   // Interaction state
   isCreatingBox: boolean;
@@ -61,6 +70,13 @@ interface AnnotationState {
   setIsResizing: (resizing: boolean) => void;
   setDragStart: (start: { x: number; y: number } | null) => void;
   setPreviewBox: (box: { x: number; y: number; width: number; height: number } | null) => void;
+  
+  // History actions
+  undo: () => void;
+  redo: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+  addToHistory: () => void;
 }
 
 const COLORS = [
@@ -83,6 +99,8 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
   panOffset: { x: 0, y: 0 },
   boundingBoxes: [],
   selectedBoxId: null,
+  history: [{ boundingBoxes: [], selectedBoxId: null }],
+  historyIndex: 0,
   isCreatingBox: false,
   isDragging: false,
   isResizing: false,
@@ -114,7 +132,9 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
         selectedBoxId: null,
         previewBox: null,
         zoomLevel: 1,
-        panOffset: { x: 0, y: 0 }
+        panOffset: { x: 0, y: 0 },
+        history: [{ boundingBoxes: [], selectedBoxId: null }],
+        historyIndex: 0
       });
     } catch (error) {
       console.error('Failed to load image:', error);
@@ -139,7 +159,7 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
   setPanOffset: (offset) => set({ panOffset: offset }),
   
   addBoundingBox: (box) => {
-    const { boundingBoxes } = get();
+    const { boundingBoxes, addToHistory } = get();
     const id = Date.now().toString();
     const colorIndex = boundingBoxes.length % COLORS.length;
     const newBox: BoundingBox = {
@@ -150,23 +170,26 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     set({ 
       boundingBoxes: [...boundingBoxes, newBox]
     });
+    addToHistory();
   },
   
   updateBoundingBox: (id, updates) => {
-    const { boundingBoxes } = get();
+    const { boundingBoxes, addToHistory } = get();
     set({
       boundingBoxes: boundingBoxes.map(box =>
         box.id === id ? { ...box, ...updates } : box
       ),
     });
+    addToHistory();
   },
   
   deleteBoundingBox: (id) => {
-    const { boundingBoxes, selectedBoxId } = get();
+    const { boundingBoxes, selectedBoxId, addToHistory } = get();
     set({
       boundingBoxes: boundingBoxes.filter(box => box.id !== id),
       selectedBoxId: selectedBoxId === id ? null : selectedBoxId,
     });
+    addToHistory();
   },
   
   selectBoundingBox: (id) => set({ selectedBoxId: id }),
@@ -184,4 +207,56 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
   setDragStart: (start) => set({ dragStart: start }),
   
   setPreviewBox: (box) => set({ previewBox: box }),
+  
+  // History actions
+  addToHistory: () => {
+    const { boundingBoxes, selectedBoxId, history, historyIndex } = get();
+    // Remove any future history if we're not at the end
+    const newHistory = history.slice(0, historyIndex + 1);
+    // Add the new entry
+    newHistory.push({ 
+      boundingBoxes: [...boundingBoxes], 
+      selectedBoxId 
+    });
+    set({ 
+      history: newHistory, 
+      historyIndex: newHistory.length - 1 
+    });
+  },
+  
+  undo: () => {
+    const { history, historyIndex } = get();
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      const historyEntry = history[newIndex];
+      set({
+        boundingBoxes: [...historyEntry.boundingBoxes],
+        selectedBoxId: historyEntry.selectedBoxId,
+        historyIndex: newIndex
+      });
+    }
+  },
+  
+  redo: () => {
+    const { history, historyIndex } = get();
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      const historyEntry = history[newIndex];
+      set({
+        boundingBoxes: [...historyEntry.boundingBoxes],
+        selectedBoxId: historyEntry.selectedBoxId,
+        historyIndex: newIndex
+      });
+    }
+  },
+  
+  canUndo: () => {
+    const { historyIndex } = get();
+    return historyIndex > 0;
+  },
+  
+  canRedo: () => {
+    const { history, historyIndex } = get();
+    return historyIndex < history.length - 1;
+  },
 }));
