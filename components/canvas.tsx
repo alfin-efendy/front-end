@@ -79,14 +79,18 @@ export function DocumentCanvas({
           transformOrigin: "top left",
         }}
       >
-        <canvas
-          className={cn(className)}
-          ref={canvasRef}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-        />
+        <div className="relative">
+          <canvas
+            className={cn(className)}
+            ref={canvasRef}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          />
+          {/* Overlay container for React annotation components */}
+          <div className="absolute inset-0 pointer-events-none" id="annotation-overlay" />
+        </div>
       </div>
     </div>
   );

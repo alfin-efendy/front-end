@@ -27,6 +27,7 @@ import { color } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useImageLoader } from "@/hooks/useImageLoader";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AnnotationOverlay } from "@/components/annotation-overlay";
 
 type Props = {
   data: InitialAnnotationData;
@@ -57,7 +58,7 @@ export const AnnotationsPage = ({ data }: Props) => {
   const toggleHelp = () => {
     setShowHelp(!showHelp);
   };
-  
+
   const {
     dataUrl,
     imageRef,
@@ -85,15 +86,23 @@ export const AnnotationsPage = ({ data }: Props) => {
   const {
     canvasRef,
     canvasContainerRef,
+    canvasSize,
+    isDrawing,
+    isDragging,
+    isResizing,
+    currentAnnotation,
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
+    handleAnnotationResize,
+    handleAnnotationDrag,
+    renderCanvas,
     resizeCanvas,
   } = useCanvas({
-    image: dataUrl!,
-    annotations: annotations,
+    image: dataUrl || "",
+    annotations,
     selectedAnnotation,
-    currentLabel: "",
+    currentLabel: "label",
     imageRef,
     addAnnotation,
     setSelectedAnnotation,
@@ -174,18 +183,32 @@ export const AnnotationsPage = ({ data }: Props) => {
             {imgLoading ? (
               <Skeleton className="rounded-lg w-full h-full" />
             ) : (
-              <DocumentCanvas
-                className="bg-green-500 "
-                image={data?.urlFile || ""}
-                canvasRef={canvasRef}
-                canvasContainerRef={canvasContainerRef}
-                handleMouseDown={handleMouseDown}
-                handleMouseMove={handleMouseMove}
-                handleMouseUp={handleMouseUp}
-                zoomLevel={zoomLevel}
-                onCanvasResize={resizeCanvas}
-                onZoomChange={handleZoomChange}
-              />
+              <div className="relative">
+                  <DocumentCanvas
+                    image={dataUrl}
+                    canvasRef={canvasRef}
+                    canvasContainerRef={canvasContainerRef}
+                    handleMouseDown={handleMouseDown}
+                    handleMouseMove={handleMouseMove}
+                    handleMouseUp={handleMouseUp}
+                    zoomLevel={zoomLevel}
+                    onCanvasResize={resizeCanvas}
+                    onZoomChange={handleZoomChange}
+                    className="border border-gray-300"
+                  />
+                  <AnnotationOverlay
+                    annotations={annotations}
+                    selectedAnnotation={selectedAnnotation}
+                    currentAnnotation={currentAnnotation}
+                    isDrawing={isDrawing}
+                    canvasWidth={canvasSize.width}
+                    canvasHeight={canvasSize.height}
+                    zoomLevel={zoomLevel}
+                    onSelectAnnotation={setSelectedAnnotation}
+                    onStartResize={handleAnnotationResize}
+                    onStartDrag={handleAnnotationDrag}
+                  />
+                </div>
             )}
           </div>
         </ResizablePanel>

@@ -63,7 +63,7 @@ export function useCanvas({
     return { x, y }
   }, [])
 
-  // Draw annotations on canvas
+  // Draw only the image on canvas (annotations are now React components)
   const renderCanvas = useCallback(() => {
     const canvas = canvasRef.current
     const ctx = canvas?.getContext("2d")
@@ -79,18 +79,6 @@ export function useCanvas({
 
         // Draw the image at the canvas dimensions
         ctx.drawImage(imageRef.current, 0, 0, canvas.width, canvas.height)
-
-        // Draw annotations
-        drawAnnotations(
-          ctx,
-          canvas.width,
-          canvas.height,
-          annotations,
-          selectedAnnotation,
-          isDrawing,
-          currentAnnotation,
-          imageRef.current,
-        )
       } else {
         // If we don't have an image reference yet, create one
         const img = new Image()
@@ -102,27 +90,15 @@ export function useCanvas({
 
           // Draw the image at the canvas dimensions
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-
-          // Draw annotations
-          drawAnnotations(
-            ctx,
-            canvas.width,
-            canvas.height,
-            annotations,
-            selectedAnnotation,
-            isDrawing,
-            currentAnnotation,
-            img,
-          )
         }
         img.src = image
       }
     } catch (error) {
       console.error("Error rendering canvas:", error)
     }
-  }, [annotations, currentAnnotation, image, imageRef, isDrawing, selectedAnnotation])
+  }, [image, imageRef])
 
-  // Update canvas cursor
+  // Update canvas cursor (simplified for React components)
   const updateCursor = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       if (!canvasRef.current || !image) return
@@ -133,21 +109,10 @@ export function useCanvas({
         return
       }
 
-      const { x, y } = getCanvasCoordinates(e.clientX, e.clientY)
-      const ctx = canvasRef.current.getContext("2d")
-      if (!ctx) return
-
-      canvasRef.current.style.cursor = getCursorStyle(
-        x,
-        y,
-        annotations,
-        selectedAnnotation,
-        canvasRef.current.width,
-        canvasRef.current.height,
-        (text) => ctx.measureText(text),
-      )
+      // Default cursor for drawing new annotations
+      canvasRef.current.style.cursor = "crosshair"
     },
-    [annotations, getCanvasCoordinates, image, isPanning, selectedAnnotation, selectedTool],
+    [image, isPanning, selectedTool],
   )
 
   // Mouse events for drawing
@@ -496,6 +461,25 @@ export function useCanvas({
     }
   }, [addAnnotation, currentAnnotation, isDrawing, isPanning])
 
+  // Handle React component events
+  const handleAnnotationResize = useCallback(
+    (handle: string, e: React.MouseEvent) => {
+      setIsResizing(true)
+      setResizeHandle(handle)
+    },
+    [],
+  )
+
+  const handleAnnotationDrag = useCallback(
+    (annotation: AnnotationClient, e: React.MouseEvent) => {
+      const { x, y } = getCanvasCoordinates(e.clientX, e.clientY)
+      setIsDragging(true)
+      setDragOffset({ x: x - annotation.x, y: y - annotation.y })
+      setSelectedAnnotation(annotation.id || annotation.tmpId)
+    },
+    [getCanvasCoordinates, setSelectedAnnotation],
+  )
+
   // Resize canvas and scale annotations
   const resizeCanvas = useCallback(() => {
     if (!image || !canvasRef.current) return
@@ -594,9 +578,12 @@ export function useCanvas({
     isDrawing,
     isDragging,
     isResizing,
+    currentAnnotation,
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
+    handleAnnotationResize,
+    handleAnnotationDrag,
     renderCanvas,
     resizeCanvas,
   }
